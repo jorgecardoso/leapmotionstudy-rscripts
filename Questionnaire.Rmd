@@ -1,0 +1,157 @@
+Subjective questionnaire
+========================================================
+
+
+
+```{r init, results='hide'}
+#install.packages(c("ggplot2", "doBy"))
+require(ggplot2)
+require(doBy)
+require(psych)
+library(reshape2)
+require(xtable)
+
+
+data <- read.csv(file="data/Resultados.csv", head=TRUE, skip=1, sep=",")
+names(data)
+```
+
+## Demographics
+
+```{r demographics, results='asis', cache=TRUE}
+
+s <- describe(data[,c(4:9)])
+s <- cbind(Device=rownames(s), s)
+
+rownames(s)<-NULL
+
+print(xtable(s), type = "html")
+      
+write.table(s, file = "tables/questionnaire-demographics-summary.csv", sep=",", row.names=FALSE)
+```
+
+```{r leapmotion, results='asis'}
+s <- describe(data[,c(11:22)])
+s <- cbind(Device=rownames(s), s)
+
+rownames(s)<-NULL
+print(xtable(s), type = "html")
+
+
+write.table(s, file = "tables/questionnaire-leapmotion-summary.csv", sep=",", row.names=FALSE)
+```
+
+```{r touchpad, results='asis', cache=TRUE}
+
+s <- describe(data[,c(24:35)])
+s <- cbind(Device=rownames(s), s)
+
+rownames(s)<-NULL
+print(xtable(s), type = "html")
+      
+write.table(s, file = "tables/questionnaire-touchpad-summary.csv", sep=",", row.names=FALSE)
+```
+
+```{r mouse, results='asis', cache=TRUE}
+s <- describe(data[,c(37:48)])
+s <- cbind(Device=rownames(s), s)
+
+rownames(s)<-NULL
+print(xtable(s), type = "html")
+write.table(s, file = "tables/questionnaire-mouse-summary.csv", sep=",", row.names=FALSE)
+```
+
+```{r devicepreference, results='asis', cache=TRUE}
+s <- describe(data[,c(50, 51)])
+s <- cbind(Device=rownames(s), s)
+
+rownames(s)<-NULL
+print(xtable(s), type = "html")
+write.table(s, file = "tables/questionnaire-devicepreference-summary.csv", sep=",", row.names=FALSE)
+```
+
+
+```{r boxplots, cache=TRUE}
+#####
+m <- NULL
+for (i in 11:22) {
+  print(colnames(data)[i])
+  c1 <- colnames(data)[i]
+  c2 <- paste(c1,".1", sep="")
+  c3 <- paste(c1,".2", sep="")
+  
+  m1 <- melt(data[,c("ID", c1, c2, c3)], id=c("ID"))
+  colnames(m1) <- c("ID", "Device", c1) 
+  levels(m1$Device) <- list( LeapMotion=c(c1),  Touchpad=c(c2), Mouse=c(c3) )
+  if ( is.null(m) ) {
+    m <- m1
+  } else{
+    m<-cbind(m, c=m1[,c(c1)] )  
+    colnames(m)[colnames(m) == "c"] <- c1
+  }
+  
+}
+
+
+m<-melt(m, id=c("ID", "Device"))
+
+
+ggplot(m, aes(Device, value, colour=Device)) + 
+  geom_boxplot() +
+  #coord_flip() +
+  facet_wrap(  ~ variable,ncol=3)
+ggsave(file = "charts/questionnaire/iso-boxplot.pdf", width=21/2.54, height=29/2.54, dpi=100)
+```
+
+```{r barplot}
+describe <- describeBy(m$value, list(m$Device,m$variable), mat=TRUE)
+colnames(describe)[colnames(describe)=="group1"] <- "Device"
+colnames(describe)[colnames(describe)=="group2"] <- "variable"
+#Reorder levels for chart
+levels(describe$Device) <- list( Mouse=c("Mouse"), Touchpad=c("Touchpad"), LeapMotion=c("LeapMotion"))
+    
+
+
+#dfc <- summarySE(m, measurevar="value", groupvars=c("Device","variable"))
+
+ggplot(describe, aes(Device, mean, colour=Device, fill=Device)) + 
+  #stat_summary(fun.y="mean", geom="bar") + 
+ geom_bar(stat="identity") +
+  #coord_flip() +
+  geom_errorbar(aes(ymin=mean-1.96*se, ymax=mean+1.96*se), colour="Black",
+               width=.2,                    # Width of the error bars
+               position=position_dodge(.9)) +
+  facet_wrap(  ~ variable,ncol=3) +
+    theme(legend.position="none", legend.direction="horizontal") +
+ggsave(file = "charts/questionnaire/iso-barplot.pdf", width=16/2.54, height=20/2.54, dpi=100)
+```
+
+
+```{r barplotall, cache=TRUE, fig.width=20, fig.height=7}
+
+describe$l <- ifelse(describe$Device=="Mouse", as.character(describe$variable), NA)
+
+ggplot(describe, aes(x=variable, y=mean, group=Device, colour=Device, fill=Device, label=l) ) + 
+    #stat_summary(fun.y="mean", geom="bar") + 
+    geom_bar(stat="identity", width=.5, position = position_dodge(width=0.5)) +
+    geom_text(angle=70, colour="Black", y=1.05,
+              hjust=0, size=4) + 
+    #geom_bar() +
+    #coord_flip() +
+    coord_cartesian(ylim=c(1.0, 5)) +
+    ylab("Average score") +
+    xlab("") +
+    geom_errorbar(aes(ymin=mean-1.96*se, ymax=mean+1.96*se), colour="Black",
+                  width=.2,                    # Width of the error bars
+                  size = .1,
+                  position=position_dodge(.5)) +
+    #facet_wrap(  ~ variable,ncol=3) +
+    theme(legend.position=c(.5,-0.1), legend.direction="horizontal", 
+          axis.text.x = element_blank()) + 
+    scale_fill_brewer(palette="Set1") + 
+    scale_colour_brewer(palette="Set1")
+    ggsave(file = "charts/questionnaire/iso-barplot-side.pdf", width=30/2.54, height=7/2.54, dpi=100)
+
+```
+
+

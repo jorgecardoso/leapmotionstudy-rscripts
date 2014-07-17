@@ -1,0 +1,197 @@
+Title
+========================================================
+ 
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring web pages (click the **Help** toolbar button for more details on using R Markdown).
+
+When you click the **Knit HTML** button a web page will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r setup}
+# This script generates the graphics with the various selection paths
+
+require(psych)
+require(ggplot2)
+require(doBy)
+require(grid)
+
+GENERATE_INDIVIDUAL_PATHS <- FALSE
+GENERATE_CIRCLEID_CHARTS <- FALSE
+GENERATE_SEQUENCE_CHARTS <- FALSE
+
+############################ data
+
+
+files <- list.files(path="data", pattern="transformed-test.txt")
+files
+dataTransformed <- data.frame()
+for (file in files) {
+  print (file)
+  dat = read.csv(paste("data/", file, sep=""), sep="", head = TRUE)
+  print(nrow(dat))
+  dataTransformed <- rbind(dataTransformed, dat)
+}
+colnames(dataTransformed)
+
+#dataTransformed <- read.csv(file="data/transformed.txt", head=TRUE, sep="")
+
+# change column name to get a nicer chart
+colnames(dataTransformed)[colnames(dataTransformed)=="NumberDevice"] <- "Device"
+
+
+# convert the column to factor and name the levels
+# LeapMotion=c(0),  Mouse=c(1), Touchpad=c(2), LeapMotionTouchless=c(4)
+dataTransformed$Device <- as.factor(dataTransformed$Device)
+levels(dataTransformed$Device) <- list( Mouse=c(1), Touchpad=c(2), LeapMotionTouchless=c(4) )
+
+# Analyse only blocks after learning effect
+dataTransformed <- dataTransformed[dataTransformed$Block>3,]
+dataTransformed$cuts<-cut(dataTransformed$percentpath, 100)
+
+
+#calculate the maximum and minimum y and x coords for setting the plots' scales
+minX <- min(dataTransformed$rx)
+maxX <- max(dataTransformed$rx)
+minY <- min(dataTransformed$ry)
+maxY <- max(dataTransformed$ry)
+print ( paste("X scale: ", minX, maxX, " Y scale: ", minY, maxY))
+
+```
+
+```{r sequence-paths}
+
+
+# plot the paths for each user and device. a single plot aggregates one entire sequence
+if (GENERATE_SEQUENCE_CHARTS == TRUE) {
+for (device in unique(dataTransformed$Device) ) {
+  for (user in unique(dataTransformed$UserId)) {
+    p <- ggplot(dataTransformed[dataTransformed$Device==device &
+                                  dataTransformed$UserId==user,], 
+                aes(x=rx, y=ry, group=Device, colour=Device )) +
+      geom_path() +
+      coord_cartesian(xlim = c(minX, maxX), ylim=c(minY, maxY)) +
+      facet_grid(Block ~ Sequence) +
+      ylab("Block") +
+      xlab("Sequence") +
+      theme(legend.position="none") +
+      ggtitle(paste("Device: ", device, " User: ", user))
+    p
+    filename <- paste("charts/paths/byblocksequence", device, "-user-", user, ".pdf", sep="")
+    print( filename  )
+    ggsave(file = filename, width=21/2.54, height=29/2.54, dpi=100)
+  }
+}
+}
+```
+
+```{r circleid-paths}
+
+# plot the paths for each user and device. a single plot aggregates one circleid
+if (GENERATE_CIRCLEID_CHARTS == TRUE) {
+for (device in unique(dataTransformed$Device) ) {
+  for (user in unique(dataTransformed$UserId)) {
+    p <- ggplot(dataTransformed[dataTransformed$Device==device &
+                                  dataTransformed$UserId==user,], 
+                aes(x=rx, y=ry, group=Device, colour=Device )) +
+      geom_path() +
+      coord_cartesian(xlim = c(minX, maxX), ylim=c(minY, maxY)) +
+      facet_grid(CircleID ~ .) +
+      ylab("Circle ID") +
+      xlab("x") +
+      theme(legend.position="none") +
+      ggtitle(paste("Device: ", device, " User: ", user))
+    p
+    filename <- paste("charts/paths/bycircleid-", device, "-user-", user, ".pdf", sep="")
+    print( filename )
+    ggsave(file = filename, width=21/2.54, height=29/2.54, dpi=100)
+  }
+}
+}
+```
+
+```{r individual-paths}
+
+# plot INDIVIDUAL paths for each user and device. 
+# PRODUCES LOTS OF FILES
+if (GENERATE_INDIVIDUAL_PATHS == TRUE) {
+  for (device in unique(dataTransformed$Device) ) {
+    for (user in unique(dataTransformed$UserId)) {
+      for (block in unique(dataTransformed[dataTransformed$Device==device &
+                                             dataTransformed$UserId==user,]$Block)) { 
+        p <- ggplot(dataTransformed[dataTransformed$Device==device &
+                                      dataTransformed$Block==block &
+                                      dataTransformed$UserId==user,], 
+                    aes(x=rx, y=ry, group=Device, colour=Device )) +
+          geom_path() +
+          coord_cartesian(xlim = c(minX, maxX), ylim=c(minY, maxY)) +
+          facet_grid(CircleID ~ Sequence) +
+          ylab("Circle Id") +
+          xlab("Block") +
+          theme(legend.position="none") +
+          ggtitle(paste("Device: ", device, " User: ", user, " Block: ", block))
+        p
+        filename <- paste("charts/paths/individual-", device, "-user-", user, "-block-", block,".pdf", sep="")
+        print( filename )
+        ggsave(file = filename, width=29/2.54, height=35/2.54, dpi=100)
+      }
+    }
+  }
+}
+
+
+```
+
+```{r analysis}
+#http://www.sigchi.org/chi96/proceedings/papers/Mithal/Akm_txt.htm
+# (a) (b) (c) (d)
+# Figure 3. Path variations. (a) target re-entry (b) task axis crossing (c) movement direction change (d) orthogonal direction change
+# An example where target re-entry was not used, yet may have helped, is Akamatsu et al.???s evaluation of a mouse with tactile feedback [2]. This
+# study found a main effect on fine
+# positioning time ??? the time to select the target after the pointer entered the target region. With tactile feedback, users exhibited a lower fine positioning time than under the no feedback, auditory feedback, and colour feedback conditions. A measure such as target re-entry may also serve to reveal differences among
+# on-target feedback conditions, for
+# example.
+# http://www.yorku.ca/mack/Ergonomics.html
+
+
+
+
+# Descriptive stats
+describeBy(dataTransformed[, c("speeds", "accels", "insidecount", "displacement", "distance")], dataTransformed[, c("Device")])
+
+
+
+agg <- aggregate(dataTransformed[, c("insidecount", "speeds", "accels")], dataTransformed[, c("Device", "UserId", "Block", "Sequence", "CircleID")], mean)
+
+
+agg <- aggregate(dataTransformed[, c("displacement", "distance")], dataTransformed[, c("Device", "UserId", "Block", "Sequence", "CircleID")], max)
+
+
+
+d <- dataTransformed[ dataTransformed$Block==4 & dataTransformed$UserId ==1 & dataTransformed$Sequence==1 & dataTransformed$CircleID==3, ]
+plot(d$speeds)
+#d <- dataTransformed[dataTransformed$Device=="Mouse" & dataTransformed$Block==4 & dataTransformed$UserId ==1 & dataTransformed$Sequence==1, ]
+
+#View()
+
+
+ggplot(d, aes(x=percentpath, y=speeds, group=Device, colour=Device)) +
+    geom_path() +
+    geom_point()
+
+
+speed<-aggregate(dataTransformed$speeds, dataTransformed[,c("displacement", "Device")], mean)
+ggplot(speed, aes(x=displacement, y=x, group=Device, colour=Device)) +
+    #geom_smooth() +
+    geom_path()
+
+
+
+speed<-aggregate(dataTransformed$speeds, dataTransformed[,c("cuts", "Device")], mean)
+ggplot(speed, aes(x=cuts, y=x, group=Device, colour=Device)) +
+    #geom_smooth() +
+    geom_path()
+
+
+accel<-aggregate(dataTransformed$accels, dataTransformed[,c("cuts", "Device")], mean)
+ggplot(accel, aes(x=cuts, y=x, group=Device, colour=Device)) +
+    #geom_smooth() +
+    geom_path()
+```
+
