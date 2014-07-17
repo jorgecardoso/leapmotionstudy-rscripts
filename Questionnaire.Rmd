@@ -2,7 +2,6 @@ Subjective questionnaire
 ========================================================
 
 
-
 ```{r init, results='hide'}
 #install.packages(c("ggplot2", "doBy"))
 require(ggplot2)
