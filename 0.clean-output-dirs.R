@@ -3,5 +3,6 @@
 
 unlink("charts/*.pdf", recursive=TRUE)
 unlink("charts/*/*.pdf", recursive=TRUE)
-
+unlink("figure/*.pdf", recursive=TRUE)
+unlink("figure/*.png", recursive=TRUE)
 unlink("tables/*.csv", recursive=TRUE)
