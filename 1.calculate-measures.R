@@ -28,7 +28,7 @@ registerDoParallel(cl)
 
 
 # get the data from files named 0.txt, 1.txt, etc.
-files <- list.files(path="data", pattern="^[0-9]+.*")
+files <- list.files(path="data", pattern="^feup-[0-9]+.*")
 files
 dataRaw <- data.frame()
 for (file in files) {
@@ -43,11 +43,14 @@ colnames(dataRaw)
 #dataRaw <- dataRaw[dataRaw$NumberDevice==1,]
 
 # file name for the transformed coordinates
-filenameTransformed <- paste("data/", "transformed-test.txt", sep="")
+filenameTransformed <- paste("data/", "transformed-feup.txt", sep="")
 
 # file name for the measures 
-filenameMeasures <- paste("data/", "measures-test.txt", sep="")
+filenameMeasures <- paste("data/", "measures-feup.txt", sep="")
 
+
+# file name for the measures along path
+filenameMeasuresAlongPath <- paste("data/", "measuresAlongPath-feup.txt", sep="")
 
 # This function transforms the coordinates of one target selection so that the movement axis lies 
 # horizontally.
@@ -192,10 +195,6 @@ transform <- function (partial) {
 # The function assumes that the 'partial' data frame passed as argument has transformed pointer coordinates
 calculateMeasures <- function (partial) {
     
-    # initialization of variables to calculate the various metrics
-    # for easier structure we keep all variables needed to calculate a given metric in a list
-    
-    
     # Error Rate
     # here we compute the error rate for a selection as the percentage of clicks outside the target
     errorRate <- (partial$NumberClicks[1]-1)/partial$NumberClicks[1]
@@ -205,10 +204,12 @@ calculateMeasures <- function (partial) {
     # e.g., the first click was outside the target
     errorRateBinary <- ifelse( (partial$NumberClicks[1]) > 1, 1, 0) 
     
+    # initialization of variables to calculate the various metrics
+    # for easier structure we keep all variables needed to calculate a given metric in a list
     
     # TRE
     tre <- list()
-    tre$TRE <- -1
+    tre$TRE <- vector()
     tre$entered <- FALSE
     
     # TAC
@@ -250,10 +251,13 @@ calculateMeasures <- function (partial) {
         if (dist(rbind(currentPoint, targetPoint)) < partial$TargetWidth[n]/2) {
             if ( !tre$entered ) {
                 tre$entered <- TRUE
-                tre$TRE <- tre$TRE + 1
+                tre$TRE <- append(tre$TRE, 1)
+            } else {
+                tre$TRE <- append(tre$TRE, 0)
             } 
         } else {
             tre$entered <- FALSE
+            tre$TRE <- append(tre$TRE, 0)
         }
         
         #TAC
@@ -301,7 +305,7 @@ calculateMeasures <- function (partial) {
                     CircleID        = partial[1,]$CircleID, 
                     ErrorRate       = errorRate, 
                     ErrorRateBinary = errorRateBinary,
-                    TRE       = tre$TRE, 
+                    TRE       = sum(tre$TRE)-1, 
                     TAC       = tac$TAC, 
                     MDC       = mdc$MDC, 
                     ODC       = odc$ODC, 
@@ -321,7 +325,135 @@ calculateMeasures <- function (partial) {
 }
 
 
+
+
+# This function calculates the various measures for a given selection path.
+# The function assumes that the 'partial' data frame passed as argument has transformed pointer coordinates
+calculateMeasuresAlongPath <- function (partial) {
+
+    # initialization of variables to calculate the various metrics
+    # for easier structure we keep all variables needed to calculate a given metric in a list
+    
+    # TRE
+    tre <- list()
+    tre$TRE <- vector()
+    tre$entered <- FALSE
+    
+    # TAC
+    tac <- list()
+    tac$TAC <- vector()
+    tac$prevTACY <- 0
+    
+    # MDC
+    mdc <- list()
+    mdc$MDC <- vector()
+    mdc$prevDif <- 0
+    
+    # ODC
+    odc <- list()
+    odc$ODC <- vector()
+    odc$prevDif <- 0
+    
+    # 
+    targetPoint <- c(partial$transfTargetx[1], partial$transfTargety[1])
+    
+    #Effective distance
+    effectiveDistance <- dist( rbind(c(partial$rx[1], partial$ry[1]), c(partial$rx[nrow(partial)], partial$ry[nrow(partial)])) )[1] 
+    distance <- numeric()
+        
+
+    percentpath <- numeric()
+    # go through all coordinates, and calculate the various measures.
+    for (n in 1:nrow(partial) ) {
+        percentpath[n] = n/nrow(partial)
+        currentPoint <- c(partial$rx[n], partial$ry[n])
+        currentPointX <- currentPoint[1]
+        currentPointY <- currentPoint[2]
+        
+        if ( n > 1 ) {
+            previousPointX <- partial$rx[n-1]
+            previousPointY <- partial$ry[n-1]
+        } else {
+            previousPointX <- currentPointX
+            previousPointY <- currentPointY
+        }
+        
+        #TRE
+        if (dist(rbind(currentPoint, targetPoint)) < partial$TargetWidth[n]/2) {
+            if ( !tre$entered ) {
+                tre$entered <- TRUE
+                tre$TRE <- append(tre$TRE, 1)
+            } else {
+                tre$TRE <- append(tre$TRE, 0)
+            } 
+        } else {
+            tre$entered <- FALSE
+            tre$TRE <- append(tre$TRE, 0)
+        }
+        
+        #TAC
+        if ( tac$prevTACY*currentPointY < 0 ) {
+            tac$TAC <- append(tac$TAC, 1)
+        } else {
+            tac$TAC <- append(tac$TAC, 0)
+        }
+        tac$prevTACY <- currentPointY
+        
+        #MDC          
+        mdc$curDif <- currentPointY-previousPointY
+        if ( mdc$prevDif * mdc$curDif < 0 ) {
+            mdc$MDC <- append(mdc$MDC, 1)
+            #print("+1")
+        } else {
+            mdc$MDC <- append(mdc$MDC, 0)
+        }
+        if ( mdc$curDif != 0 ) {
+            mdc$prevDif <- mdc$curDif
+        }
+        
+        #ODC        
+        #curX <- newPoint[1, 1]
+        odc$curDif <- currentPointX-previousPointX
+        if ( odc$prevDif * odc$curDif < 0 ) {
+            odc$ODC <- append(odc$ODC, 1)
+        } else {
+            odc$ODC <- append(odc$ODC, 0)
+        }
+        if ( odc$curDif != 0 ) {
+            odc$prevDif <- odc$curDif
+        }   
+        
+        
+        currentDistance = dist( rbind(c(partial$rx[n], partial$ry[n]), c(partial$rx[nrow(partial)], partial$ry[nrow(partial)])) )[1] 
+        distance[n] = currentDistance/effectiveDistance
+        
+    }
+    
+    
+    row<-data.frame(Device          = partial[1,]$NumberDevice, 
+                    UserId          = partial[1,]$UserId, 
+                    Block           = partial[1,]$Block, 
+                    Sequence        = partial[1,]$Sequence, 
+                    CircleID        = partial[1,]$CircleID, 
+                    PercentPath = percentpath,
+                    Distance = distance,
+                    TREEvents = tre$TRE,
+                    TREPercent = tre$TRE/(sum(tre$TRE)),
+                    TACEvents = tac$TAC, 
+                    TACPercent = tac$TAC/(sum(tac$TAC)),
+                    MDCEvents = mdc$MDC, 
+                    MDCPercent = mdc$MDC/(sum(mdc$MDC)),
+                    ODCEvents = odc$ODC,
+                    ODCPercent = odc$ODC/(sum(odc$ODC))
+               )
+    
+    return (row)
+}
+
+
 dataMeasures <- data.frame()
+
+dataMeasuresAlongPath <- data.frame()
 newData <- data.frame()
 
 
@@ -375,6 +507,31 @@ measuresJob <- function(user, device, block) {
 }
 
 
+
+# This function is executed as a parallel job, for calculating the transformed pointer coordinates for a given sequence.
+measuresAlongPathJob <- function(user, device, block) {
+    measures <- data.frame()
+    
+    for (sequence in 1:max(newData[newData$UserId==user & newData$NumberDevice==device & newData$Block==block,]$Sequence) ) {
+        #for (sequence in 1:1 ) {
+        print(paste("User:", user, " Device:", device, " Block:", block, " Sequence: ", sequence))
+        
+        for (cid in 1:max(newData$CircleID) ) {
+            # indexes for the current target selection
+            sampleIndexes <- which(newData$UserId == user & newData$NumberDevice == device & newData$Block == block & newData$Sequence == sequence & newData$CircleID == cid)
+            
+            # partial will hold the new calculated variables for the current selection path
+            partial <- newData[sampleIndexes, ]
+            
+            measuresRow <- calculateMeasuresAlongPath(partial)  
+            measures <- rbind(measures, measuresRow)
+        }
+        
+    }
+    return (measures)
+}
+
+
 # this will go through all users, devices, blocks, and launch a job for each sequence 
 # for calculating the transformed coordinates
 print("Transforming pointer coordinates...")
@@ -402,6 +559,7 @@ for (user in unique(dataRaw$UserId) ) {
 )
 print(time)
 
+
 # this will go through all users, devices, blocks,  sequences, and circle ids, and calculate the various measures for each selection
 
 print("Calculating MacKenzie's measures...")
@@ -426,6 +584,32 @@ for (user in unique(newData$UserId) ) {
 
 print(time1)
 print(paste("Total time:", (time+time1)[3]/60, "minutes."))
+
+
+# this will go through all users, devices, blocks,  sequences, and circle ids, and calculate the various measures along the path for each selection
+print("Calculating MacKenzie's measures along path...")
+time1 = system.time(
+    for (user in unique(newData$UserId) ) {
+        #for (user in 4 ) {
+        
+        for (device in unique(newData[newData$UserId==user,]$NumberDevice) ) {
+            #for (device in unique(newData$NumberDevice)[1] ) {
+            
+            print(paste("User:", user, " Device:", device, " Blocks:",  
+                        max(newData[newData$UserId==user & newData$NumberDevice==device,]$Block )))
+            
+            f <- foreach(block = 1:max(newData[newData$UserId==user & newData$NumberDevice==device,]$Block),
+                         .combine='rbind') %dopar% measuresAlongPathJob(user, device, block)
+            
+            dataMeasuresAlongPath <- rbind(dataMeasuresAlongPath, f)
+            
+        }
+    }
+)
+
+print(time1)
+print(paste("Total time:", (time+time1)[3]/60, "minutes."))
+
 
 # 
 print(paste("Noise errors found: ", noiseErrorCount))
@@ -454,5 +638,6 @@ for ( device in unique(dataMeasures$Device)) {
 #View(dataMeasures)
 write.table(newData, file = filenameTransformed, sep=" ", row.names=FALSE)
 write.table(dataMeasures, file = filenameMeasures, sep=" ", row.names=FALSE)
+write.table(dataMeasuresAlongPath, file = filenameMeasuresAlongPath, sep=" ", row.names=FALSE)
 
 stopCluster(cl)
