@@ -1,0 +1,129 @@
+Title
+========================================================
+
+```{r requires}
+require(psych)
+require(ggplot2)
+require(doBy)
+require(grid)
+library(doParallel)
+library(reshape2)
+```
+
+
+```{r setup-measures}
+distanceBreaks <- c(seq(0,0.975, by=.025), 2)
+filenameMeasuresAlongPath <- paste("data/", "measuresAlongPath-feup.txt", sep="")
+filenameMeasuresAlongPathClean <- paste("data/", "measuresAlongPathClean-feup.txt", sep="")
+
+# if we have already saved the clean data file, just load it and skip to the aggregation
+fileExists <- file.exists(filenameMeasuresAlongPathClean)
+fileExists <- FALSE
+if ( !fileExists) {
+    measuresAlongPath1 = read.csv(filenameMeasuresAlongPath, sep="", head = TRUE)
+    
+    #set the factor columns
+    measuresAlongPath1$Device <- factor(measuresAlongPath1$Device)
+    levels(measuresAlongPath1$Device) <- list( Mouse=c(1), LeapMotion=c(0), LeapMotionTouchless=c(4) )
+    measuresAlongPath1$UserId <- factor(measuresAlongPath1$UserId)
+    measuresAlongPath1$Block <- factor(measuresAlongPath1$Block)
+    measuresAlongPath1$Sequence <- factor(measuresAlongPath1$Sequence)
+    measuresAlongPath1$CircleID <- factor(measuresAlongPath1$CircleID)
+    
+    # create cuts for the distance
+    measuresAlongPath1$CutsDistance<-cut(measuresAlongPath1$Distance, breaks=distanceBreaks, include.lowest=TRUE, right=TRUE)
+    
+    
+    # we need all levels complete so create a data frame with all combinations and merge
+    all <- with(measuresAlongPath1, expand.grid(Device = levels(Device), UserId = levels(UserId), 
+                                                Block=levels(Block), Sequence=levels(Sequence), 
+                                                CircleID=levels(CircleID), CutsDistance=levels(CutsDistance)))
+    measuresAlongPath1 <- merge(measuresAlongPath1, all, all.y = TRUE)
+    measuresAlongPath1$TACPercent[is.na(measuresAlongPath1$TACPercent)] = 0
+    measuresAlongPath1$TREPercent[is.na(measuresAlongPath1$TREPercent)] = 0
+    measuresAlongPath1$MDCPercent[is.na(measuresAlongPath1$MDCPercent)] = 0
+    measuresAlongPath1$ODCPercent[is.na(measuresAlongPath1$ODCPercent)] = 0
+    
+    measuresAlongPath1$TACEvents[is.na(measuresAlongPath1$TACEvents)] = 0
+    measuresAlongPath1$TREEvents[is.na(measuresAlongPath1$TREEvents)] = 0
+    measuresAlongPath1$MDCEvents[is.na(measuresAlongPath1$MDCEvents)] = 0
+    measuresAlongPath1$ODCEvents[is.na(measuresAlongPath1$ODCEvents)] = 0
+    
+    
+    # just for testing
+    #measuresAlongPath <- measuresAlongPath1[ measuresAlongPath1$Device=="LeapMotionTouchless" & measuresAlongPath1$UserId==0 & measuresAlongPath1$Block==1 & measuresAlongPath1$Sequence==1 ,]
+    #measuresAlongPath <- measuresAlongPath1[ measuresAlongPath1$Device=="LeapMotionTouchless" & measuresAlongPath1$UserId==0 & measuresAlongPath1$Block==1  ,]
+    measuresAlongPath <- measuresAlongPath1
+    
+    #####remove circleIds with zero events
+    #check if file with clean data exists
+#     getIndexes <- function(zeroes, i) {
+#         return (which(measuresAlongPath$Device==zeroes[i,]$Device & measuresAlongPath$UserId==zeroes[i,]$UserId & measuresAlongPath$Block==zeroes[i,]$Block & measuresAlongPath$Sequence==zeroes[i,]$Sequence & measuresAlongPath$CircleID==zeroes[i,]$CircleID))
+#     }
+#     
+# 
+#     cl <- makeCluster(8)
+#     registerDoParallel(cl)
+#     
+#     zeroes<-aggregate(measuresAlongPath[ ,DVars], 
+#                       measuresAlongPath[ ,c("Device", "UserId", "Block", "Sequence", "CircleID")], sum)
+#     zeroes<-zeroes[zeroes$x==0,]
+#     indexes<-numeric()
+#     for ( user in unique(zeroes$UserId) ) {
+#         print(paste(user))
+#         f <- foreach(i = 1:nrow(zeroes[zeroes$UserId==user,]), .combine='c') %dopar% {
+#             getIndexes(zeroes[zeroes$UserId==user,], i)
+#         }
+#         measuresAlongPath <- measuresAlongPath[-f,]
+#     }
+#     stopCluster(cl)
+    
+    write.table(measuresAlongPath, file = filenameMeasuresAlongPathClean, sep=" ", row.names=FALSE)
+} else {
+    measuresAlongPath = read.csv(filenameMeasuresAlongPathClean, sep="", head = TRUE)
+}
+
+
+
+# Compute the aggregate means for each variable.
+# We agregate all values for the various circles
+#aggDataEventsProbabilityDistribution <-aggregate(measuresAlongPath[ ,c("TACPercent", "TREPercent", "MDCPercent", "ODCPercent")], 
+                       measuresAlongPath[ ,c("Device", "UserId", "Block", "Sequence", "CircleID", "CutsDistance")], sum)
+ 
+aggDataEventsDistribution <-aggregate(measuresAlongPath[ ,c("TACEvents", "TREEvents", "MDCEvents", "ODCEvents")], 
+                                      measuresAlongPath[ ,c("Device", "UserId", "Block", "Sequence", "CircleID", "CutsDistance")], sum)
+
+#Correct TRE Events count because the script the creates the measuresalongpath file wrongly counts a TRE in the first target entry
+aggDataEventsDistribution$TREEvents = ifelse(aggDataEventsDistribution$TREEvents > 0, aggDataEventsDistribution$TREEvents-1, 0)
+
+#summary(aggDataEventsDistribution$TREEvents)
+```
+
+
+
+```{r analysis-measures-alongpath}
+
+# 
+#  aggData<-aggregate( aggDataEventsProbabilityDistribution[ , c("TREPercent","TACPercent",  "MDCPercent", "ODCPercent")], aggDataEventsProbabilityDistribution[ , c("Device", "CutsDistance")], mean)
+#  
+#  aggData<-melt(aggData, id.vars=1:2)
+#  
+#  ggplot(aggData, aes(x=CutsDistance, y=value, group=Device, colour=Device)) +
+#      geom_bar(stat="identity") + 
+#      facet_wrap( Device ~ variable, nrow=3) 
+#      #geom_line()
+
+
+
+aggDataE<-aggregate( aggDataEventsDistribution[ , c("TREEvents","TACEvents",  "MDCEvents", "ODCEvents")], 
+                     aggDataEventsDistribution[ , c("Device", "CutsDistance")], mean)
+
+aggDataE<-melt(aggDataE, id.vars=1:2)
+#reverse the cutsdistance factor so we get a plot with minimum distance on the right
+aggDataE$CutsDistance <- factor(aggDataE$CutsDistance, rev(levels(aggDataE$CutsDistance)))
+
+ggplot(aggDataE, aes(x=CutsDistance, y=value, group=Device, colour=Device)) +
+    geom_bar(stat="identity") + 
+    facet_wrap( Device ~ variable, nrow=3)  
+
+```
