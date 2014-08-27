@@ -31,10 +31,13 @@ require(xtable)
 source("functions.R")
 
 # load metrics data
-data <- read.csv(file="data/measures-test.txt", head=TRUE, sep="")
+data <- read.csv(file="data/measures-feup.txt", head=TRUE, sep="")
 
 # Users 0 and 5 did not complete the experiment
-data <- data[data$UserId != 0 & data$UserId != 5,]
+data <- data[ data$UserId != 5,]
+
+# Only blocks <= 7
+data <- data[ data$Block <= 7,]
 
 # convert the column to factor and name the levels
 data$Device <- as.factor(data$Device)
@@ -42,7 +45,7 @@ data$Device <- as.factor(data$Device)
 # Set the levels 
 # LeapMotion=c(0),  Mouse=c(1), Touchpad=c(2), LeapMotionTouchless=c(4)
 # LeapMotion does not exist in the dataset from the UCP experiment
-levels(data$Device) <- list( Mouse=c(1), Touchpad=c(2), LeapMotionTouchless=c(4))
+levels(data$Device) <- list(Mouse=c(1), LeapMotion=c(0), LeapMotionTouchless=c(4))
 
 # convert the block column to factor
 data$Block <- factor(data$Block)
@@ -181,7 +184,7 @@ diag(p.t.test$p.value) < 0.05
 
 
 # We will consider only blocks 4 to 8 in the rest of the analysis
-filenameprefix <- "blocks4-8"
+filenameprefix <- "blocks4-7"
 aggData.noLearn <- aggData[as.numeric(aggData$Block) > 3,]
 
 # Drop unused block levels
@@ -205,31 +208,6 @@ for ( device in unique(data$Device)) {
     print(device)
     print(p)
 }
-
-
-# helmert contrasts 
-my.helmert = matrix(c(7/8, -1/8, -1/8, -1/8, -1/8, -1/8, -1/8, -1/8,
-                      0,  6/7, -1/7, -1/7, -1/7, -1/7, -1/7, -1/7,
-                      0,    0,  5/6, -1/6, -1/6, -1/6, -1/6, -1/6,
-                      0,    0,    0,  4/5, -1/5, -1/5, -1/5, -1/5,
-                      0,    0,    0,    0,  3/4, -1/4, -1/4, -1/4, 
-                      0,    0,    0,    0,    0,  2/3, -1/3, -1/3, 
-                      0,    0,    0,    0,    0,    0,  1/2, -1/2 
-                      ), ncol = 7)
-
-## my.rev.helmert = matrix(c(-1/2,  1/2,    0,    0,   0,    0,   0,  0,  
-##                           -1/3, -1/3,  3/3,    0,   0,    0,   0,  0,
-##                           -1/4, -1/4, -1/4,  3/4,   0,    0,   0,  0,
-##                           -1/5, -1/5, -1/5, -1/5, 4/5,    0,   0,  0,
-##                           -1/6, -1/6, -1/6, -1/6, -1/6, 5/6,   0,  0, 
-#                           -1/7, -1/7, -1/7, -1/7, -1/7, -1/7, 6/7, 0,
-#                           -1/8, -1/8, -1/8, -1/8, -1/8, -1/8, -1/8,7/8
-#                          ), ncol = 7)
-
-contrasts(data$Block) = my.helmert
-summary(lm(MovementTime~Block, data=data))
-summary(lm(MovementTime~Block, data=data[data$Device=="Touchpad",]))
-summary(lm(MovementTime~Block, data=data[data$Device=="Mouse",]))
 
 
 ```
@@ -406,7 +384,7 @@ Throughput and Error rate
 describe <- describeBy(aggData.noLearn$Throughput, list(aggData.noLearn$Device))
 describe<-do.call("rbind",describe)
 describe <- cbind(Device=rownames(describe), describe)
-levels(describe$Device) <- list( Mouse=c("Mouse"), Touchpad=c("Touchpad"), LeapMotionTouchless=c("LeapMotionTouchless"))
+levels(describe$Device) <- list( Mouse=c("Mouse"), LeapMotion=c("LeapMotion"), LeapMotionTouchless=c("LeapMotionTouchless"))
 p1 <- ggplot(describe, aes(x=Device, y=mean, colour=Device, fill=Device )) + 
     geom_bar(stat="identity") +
     ylab("BPS") +
@@ -427,7 +405,7 @@ p1 <- ggplot(describe, aes(x=Device, y=mean, colour=Device, fill=Device )) +
 describe <- describeBy(aggData.noLearn$ErrorRate, list(aggData.noLearn$Device))
 describe<-do.call("rbind",describe)
 describe <- cbind(Device=rownames(describe), describe)
-levels(describe$Device) <- list( Mouse=c("Mouse"), Touchpad=c("Touchpad"), LeapMotionTouchless=c("LeapMotionTouchless"))
+levels(describe$Device) <- list( Mouse=c("Mouse"), LeapMotion=c("LeapMotion"), LeapMotionTouchless=c("LeapMotionTouchless"))
 
 p2 <- ggplot(describe, aes(x=Device, y=mean*100, colour=Device, fill=Device )) + 
     geom_bar(stat="identity") +
