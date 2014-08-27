@@ -1,16 +1,21 @@
 Title
 ========================================================
- 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring web pages (click the **Help** toolbar button for more details on using R Markdown).
 
-When you click the **Knit HTML** button a web page will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-```{r setup}
-# This script generates the graphics with the various selection paths
+Analisar o tempo que o cursor está dentro do alvo.
 
+
+```{r requires}
 require(psych)
 require(ggplot2)
 require(doBy)
 require(grid)
+library(doParallel)
+library(reshape2)
+```
+
+
+```{r setup-paths, eval=FALSE}
+# This script generates the graphics with the various selection paths
 
 GENERATE_INDIVIDUAL_PATHS <- FALSE
 GENERATE_CIRCLEID_CHARTS <- FALSE
@@ -19,7 +24,7 @@ GENERATE_SEQUENCE_CHARTS <- FALSE
 ############################ data
 
 
-files <- list.files(path="data", pattern="transformed-test.txt")
+files <- list.files(path="data", pattern="transformed-feup.txt")
 files
 dataTransformed <- data.frame()
 for (file in files) {
@@ -39,7 +44,7 @@ colnames(dataTransformed)[colnames(dataTransformed)=="NumberDevice"] <- "Device"
 # convert the column to factor and name the levels
 # LeapMotion=c(0),  Mouse=c(1), Touchpad=c(2), LeapMotionTouchless=c(4)
 dataTransformed$Device <- as.factor(dataTransformed$Device)
-levels(dataTransformed$Device) <- list( Mouse=c(1), Touchpad=c(2), LeapMotionTouchless=c(4) )
+levels(dataTransformed$Device) <- list( Mouse=c(1), LeapMotion=c(0), LeapMotionTouchless=c(4) )
 
 # Analyse only blocks after learning effect
 dataTransformed <- dataTransformed[dataTransformed$Block>3,]
@@ -52,12 +57,115 @@ maxX <- max(dataTransformed$rx)
 minY <- min(dataTransformed$ry)
 maxY <- max(dataTransformed$ry)
 print ( paste("X scale: ", minX, maxX, " Y scale: ", minY, maxY))
+```
+
+```{r setup-measures}
+
+measuresAlongPath1 = read.csv(paste("data/", "measuresAlongPath-feup.txt", sep=""), sep="", head = TRUE)
+
+#set the factor columns
+measuresAlongPath1$Device <- factor(measuresAlongPath1$Device)
+levels(measuresAlongPath1$Device) <- list( Mouse=c(1), LeapMotion=c(0), LeapMotionTouchless=c(4) )
+measuresAlongPath1$UserId <- factor(measuresAlongPath1$UserId)
+measuresAlongPath1$Block <- factor(measuresAlongPath1$Block)
+measuresAlongPath1$Sequence <- factor(measuresAlongPath1$Sequence)
+measuresAlongPath1$CircleID <- factor(measuresAlongPath1$CircleID)
+
+# create cuts for the distance
+measuresAlongPath1$CutsDistance<-cut(measuresAlongPath1$Distance, breaks=c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 3), include.lowest=TRUE, right=TRUE)
+
+
+# we need all levels complete so create a data frame with all combinations and merge
+all <- with(measuresAlongPath1, expand.grid(Device = levels(Device), UserId = levels(UserId), 
+                                            Block=levels(Block), Sequence=levels(Sequence), 
+                                            CircleID=levels(CircleID), CutsDistance=levels(CutsDistance)))
+measuresAlongPath1 <- merge(measuresAlongPath1, all, all.y = TRUE)
+measuresAlongPath1$TACPercent[is.na(measuresAlongPath1$TACPercent)] = 0
+measuresAlongPath1$TREPercent[is.na(measuresAlongPath1$TREPercent)] = 0
+measuresAlongPath1$MDCPercent[is.na(measuresAlongPath1$MDCPercent)] = 0
+measuresAlongPath1$ODCPercent[is.na(measuresAlongPath1$ODCPercent)] = 0
+
+
+
+# just for testing
+#measuresAlongPath <- measuresAlongPath1[ measuresAlongPath1$Device=="LeapMotionTouchless" & measuresAlongPath1$UserId==0 & measuresAlongPath1$Block==1 & measuresAlongPath1$Sequence==1 ,]
+#measuresAlongPath <- measuresAlongPath1[ measuresAlongPath1$Device=="LeapMotionTouchless" & measuresAlongPath1$UserId==0 & measuresAlongPath1$Block==1  ,]
+measuresAlongPath <- measuresAlongPath1
+
+#measuresAlongPath<-measuresAlongPath[complete.cases(measuresAlongPath),]
+
+
+
+#measuresAlongPath$CutsPercentPath<-cut(measuresAlongPath$PercentPath, 100)
+#measuresAlongPath$CutsPercentPath<-cut(measuresAlongPath$PercentPath,  breaks=c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0), include.lowest=TRUE, right=TRUE)
+
+#measuresAlongPath$CutsDistance<-cut(measuresAlongPath$Distance, 10)
+
+#####remove circleIds with zero events
+#check if file with clean data exists
+fileExists <- file.exists("data/measuresAlongPathClean-feup.txt")
+
+
+getIndexes <- function(zeroes, i) {
+    
+    return (which(measuresAlongPath$Device==zeroes[i,]$Device & measuresAlongPath$UserId==zeroes[i,]$UserId & measuresAlongPath$Block==zeroes[i,]$Block & measuresAlongPath$Sequence==zeroes[i,]$Sequence & measuresAlongPath$CircleID==zeroes[i,]$CircleID))
+}
+
+if ( !fileExists) {
+    
+    cl <- makeCluster(8)
+    registerDoParallel(cl)
+    
+    zeroes<-aggregate(measuresAlongPath[ ,DVars], measuresAlongPath[ ,c("Device", "UserId", "Block", "Sequence", "CircleID")], sum)
+    zeroes<-zeroes[zeroes$x==0,]
+    indexes<-numeric()
+    for ( user in unique(zeroes$UserId) ) {
+        print(paste(user))
+        f <- foreach(i = 1:nrow(zeroes[zeroes$UserId==user,]), .combine='c') %dopar% {
+            getIndexes(zeroes[zeroes$UserId==user,], i)
+        }
+        measuresAlongPath <- measuresAlongPath[-f,]
+    }
+    
+#     for ( i in 1:nrow(zeroes) ) {
+#         indexes <- append(indexes, which(measuresAlongPath$Device==zeroes[i,]$Device & measuresAlongPath$UserId==zeroes[i,]$UserId & measuresAlongPath$Block==zeroes[i,]$Block & measuresAlongPath$Sequence==zeroes[i,]$Sequence & measuresAlongPath$CircleID==zeroes[i,]$CircleID))
+#         if ( length(indexes) > 500 ) {
+#             measuresAlongPath <- measuresAlongPath[-indexes,]
+#             indexes <- numeric()
+#             print(paste(i, " ", round(i/nrow(zeroes), 2)," ", nrow(measuresAlongPath)))
+#         }
+#     
+#     }
+    stopCluster(cl)
+    write.table(measuresAlongPath, file = "data/measuresAlongPathClean-feup.txt", sep=" ", row.names=FALSE)
+}
+#measuresAlongPath<-measuresAlongPath[!( measuresAlongPath$Device %in% zeroes[zeroes$x==0,]$Device & measuresAlongPath$UserId %in% zeroes[zeroes$x==0,]$UserId & measuresAlongPath$Block %in% zeroes[zeroes$x==0,]$Block &  measuresAlongPath$Sequence %in% zeroes[zeroes$x==0,]$Sequence & measuresAlongPath$CircleID %in% zeroes[zeroes$x==0,]$CircleID ),]
+
+# Compute the aggregate means for each variable.
+# We agregate all values for the various circles
+IVarsDistance <- c("Device", "UserId", "Block", "Sequence", "CircleID", "CutsDistance")
+DVars <- c("TACPercent", "TREPercent", "MDCPercent", "ODCPercent")
+aggDataSum <-aggregate(measuresAlongPath[ ,DVars], measuresAlongPath[ ,IVarsDistance], sum)
+
+
+#aggregate(measuresAlongPath[ ,DVars], measuresAlongPath[ ,c("Device", "CutsDistance")], sum)
+
+
+aggDataMean <- aggregate(aggDataSum[ ,c("TACPercent")], aggDataSum[ ,c("Device",  "CutsDistance")], mean)
+
+aggregate(aggDataMean[ ,c("x")], aggDataMean[ , c("Device")], sum)
+
+aggDatas <-aggregate(aggDataSum[ ,c("x")], aggDataSum[ ,c("Device", "CutsDistance")], sum)
+aggDatal <-aggregate(aggDataSum[ ,c("x")], aggDataSum[ ,c("Device", "CutsDistance")], length)
+
+#aggDataCount <-aggregate(measuresAlongPath[ ,DVars], measuresAlongPath[ ,IVarsDistance], length)
+aggData$Block <- factor(aggData$Block)
+
+
 
 ```
 
-```{r sequence-paths}
-
-
+```{r sequence-paths, eval=FALSE}
 # plot the paths for each user and device. a single plot aggregates one entire sequence
 if (GENERATE_SEQUENCE_CHARTS == TRUE) {
 for (device in unique(dataTransformed$Device) ) {
@@ -81,7 +189,7 @@ for (device in unique(dataTransformed$Device) ) {
 }
 ```
 
-```{r circleid-paths}
+```{r circleid-paths, eval=FALSE}
 
 # plot the paths for each user and device. a single plot aggregates one circleid
 if (GENERATE_CIRCLEID_CHARTS == TRUE) {
@@ -106,7 +214,7 @@ for (device in unique(dataTransformed$Device) ) {
 }
 ```
 
-```{r individual-paths}
+```{r individual-paths, eval=FALSE}
 
 # plot INDIVIDUAL paths for each user and device. 
 # PRODUCES LOTS OF FILES
@@ -138,7 +246,7 @@ if (GENERATE_INDIVIDUAL_PATHS == TRUE) {
 
 ```
 
-```{r analysis}
+```{r analysis, eval=FALSE}
 #http://www.sigchi.org/chi96/proceedings/papers/Mithal/Akm_txt.htm
 # (a) (b) (c) (d)
 # Figure 3. Path variations. (a) target re-entry (b) task axis crossing (c) movement direction change (d) orthogonal direction change
@@ -195,3 +303,26 @@ ggplot(accel, aes(x=cuts, y=x, group=Device, colour=Device)) +
     geom_path()
 ```
 
+
+```{r analysis-measures-alongpath}
+IVarsDistance <- c("Device", "CutsDistance")
+
+aggData<-aggregate( aggDataSum[ , c("TREPercent","TACPercent",  "MDCPercent", "ODCPercent")], aggDataSum[ ,IVarsDistance], mean)
+
+aggData<-melt(aggData, id.vars=1:2)
+
+ggplot(aggData, aes(x=CutsDistance, y=value, group=Device, colour=Device)) +
+    geom_bar(stat="identity") + 
+    facet_wrap( Device ~ variable, nrow=3) 
+    #geom_line()
+
+
+ggplot(aggData, aes(x=CutsDistance, y=x, group=Device, colour=Device)) +
+    #geom_bar(stat="identity")
+    geom_line()
+    #geom_smooth() +
+
+
+
+
+```
