@@ -30,51 +30,76 @@ print(xtable(s), type = "html")
 write.table(s, file = "tables/questionnaire-demographics-summary.csv", sep=",", row.names=FALSE)
 ```
 
-```{r leapmotion, results='asis'}
-s <- describe(data[,c(11:22)])
+```{r mouse, results='asis'}
+s <- describe(data[,c(10:21)])
 s <- cbind(Device=rownames(s), s)
 
 rownames(s)<-NULL
 print(xtable(s), type = "html")
 
 
-write.table(s, file = "tables/questionnaire-leapmotion-summary.csv", sep=",", row.names=FALSE)
+write.table(s, file = "tables/questionnaire-mouse-summary.csv", sep=",", row.names=FALSE)
 ```
 
-```{r touchpad, results='asis', cache=TRUE}
+```{r leapmotionscreentap, results='asis', cache=TRUE}
 
-s <- describe(data[,c(24:35)])
+s <- describe(data[,c(23:34)])
 s <- cbind(Device=rownames(s), s)
 
 rownames(s)<-NULL
 print(xtable(s), type = "html")
       
-write.table(s, file = "tables/questionnaire-touchpad-summary.csv", sep=",", row.names=FALSE)
+write.table(s, file = "tables/questionnaire-leapmotionscreentap-summary.csv", sep=",", row.names=FALSE)
 ```
 
-```{r mouse, results='asis', cache=TRUE}
-s <- describe(data[,c(37:48)])
+```{r leapmotionhandgrab, results='asis', cache=TRUE}
+s <- describe(data[,c(36:47)])
 s <- cbind(Device=rownames(s), s)
 
 rownames(s)<-NULL
 print(xtable(s), type = "html")
-write.table(s, file = "tables/questionnaire-mouse-summary.csv", sep=",", row.names=FALSE)
+write.table(s, file = "tables/questionnaire-leapmotionhandgrab-summary.csv", sep=",", row.names=FALSE)
 ```
 
+
+All users indicated that their favorite device was the mouse. 
+Regarding the two gestures users answered:
 ```{r devicepreference, results='asis', cache=TRUE}
-s <- describe(data[,c(50, 51)])
-s <- cbind(Device=rownames(s), s)
+s <- data[,c(1,50:53)]
+smelted<-melt(s, id=c("ID"))
+smelted$value <- factor(smelted$value)
+levels(smelted$value) <- list( LeapMotionScreenTap=c("Touchless"), LeapMotionHandGrab=c("Grabbing") )
+colnames(smelted)[2] = "Question"
+colnames(smelted)[3] = "Gesture"
+#s <- cbind(Device=rownames(s), s)
 
-rownames(s)<-NULL
-print(xtable(s), type = "html")
-write.table(s, file = "tables/questionnaire-devicepreference-summary.csv", sep=",", row.names=FALSE)
+#put an "?" at the end, and replace "." with a space.
+smelted$Question<-gsub("\\.$", "?", smelted$Question)
+smelted$Question<-gsub("\\.", " ", smelted$Question)
+
+ggplot(smelted, aes( x=Question) ) +
+    geom_histogram(aes( colour=Question, fill=Question)) +
+    facet_wrap( ~ Gesture, nrow=4) +
+    scale_fill_brewer(palette="Set1") + 
+    scale_colour_brewer(palette="Set1") + 
+    theme(panel.margin = unit(2, "lines")) +
+    theme(legend.position="top", 
+          legend.direction="vertical", 
+          legend.text=element_text(size=12),
+          legend.title=element_text(size=14)) +
+    theme(axis.text.x = element_blank() ) +
+    #theme(strip.text.x = element_text(angle=65, hjust=0)) +
+    ylab("Frequency") +
+    #xlab("") +
+    theme()
+ggsave(file = "charts/questionnaire/gesture-preference.pdf", width=14/2.54, height=14/2.54, dpi=100)
 ```
 
 
 ```{r boxplots, cache=TRUE}
 #####
 m <- NULL
-for (i in 11:22) {
+for (i in 10:21) {
   print(colnames(data)[i])
   c1 <- colnames(data)[i]
   c2 <- paste(c1,".1", sep="")
@@ -82,7 +107,7 @@ for (i in 11:22) {
   
   m1 <- melt(data[,c("ID", c1, c2, c3)], id=c("ID"))
   colnames(m1) <- c("ID", "Device", c1) 
-  levels(m1$Device) <- list( LeapMotion=c(c1),  Touchpad=c(c2), Mouse=c(c3) )
+  levels(m1$Device) <- list( Mouse=c(c1),  LeapMotionScreenTap=c(c2), LeapMotionHandGrab=c(c3) )
   if ( is.null(m) ) {
     m <- m1
   } else{
@@ -108,7 +133,7 @@ describe <- describeBy(m$value, list(m$Device,m$variable), mat=TRUE)
 colnames(describe)[colnames(describe)=="group1"] <- "Device"
 colnames(describe)[colnames(describe)=="group2"] <- "variable"
 #Reorder levels for chart
-levels(describe$Device) <- list( Mouse=c("Mouse"), Touchpad=c("Touchpad"), LeapMotion=c("LeapMotion"))
+levels(describe$Device) <- list( Mouse=c("Mouse"), LeapMotionScreenTap=c("LeapMotionScreenTap"), LeapMotionHandGrab=c("LeapMotionHandGrab"))
     
 
 
@@ -122,7 +147,8 @@ ggplot(describe, aes(Device, mean, colour=Device, fill=Device)) +
                width=.2,                    # Width of the error bars
                position=position_dodge(.9)) +
   facet_wrap(  ~ variable,ncol=3) +
-    theme(legend.position="none", legend.direction="horizontal") +
+  theme(legend.position="top", 
+        legend.direction="horizontal") 
 ggsave(file = "charts/questionnaire/iso-barplot.pdf", width=16/2.54, height=20/2.54, dpi=100)
 ```
 
