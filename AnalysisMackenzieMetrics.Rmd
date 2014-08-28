@@ -185,7 +185,7 @@ diag(p.t.test$p.value) < 0.05
 
 # We will consider only blocks 4 to 8 in the rest of the analysis
 filenameprefix <- "blocks4-7"
-aggData.noLearn <- aggData[as.numeric(aggData$Block) > 3,]
+aggData.noLearn <- aggData[as.numeric(aggData$Block) > 3 & as.numeric(aggData$Block) < 8,]
 
 # Drop unused block levels
 aggData.noLearn$Block <- factor(aggData.noLearn$Block)
