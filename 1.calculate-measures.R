@@ -1,8 +1,9 @@
 # This file takes as input the individual datasets for each user (<number>.txt files) 
-# and generates two output files: 
+# and generates three output files: 
 # - transformed.txt, contains the same data as the individual files, plus the transformed path coordinates so that
 #   each selection path lies horizontally.
 # - measures.txt, contains the various Mackenzie's accuracy measures for each path
+# - measuresAlongPath.txt, contains the TRE, TAC, MDC, and ODC events along the path
 
 #install.packages(c("doParallel"))
 library(doParallel)
@@ -108,6 +109,12 @@ transform <- function (partial) {
     entered <- FALSE
     
     
+    #Effective distance to target
+    effectiveDistanceToTarget <- dist( rbind(c(partial$MouseX[1], partial$MouseY[1]), c(partial$MouseX[nrow(partial)], partial$MouseY[nrow(partial)])) )[1] 
+    distanceToTarget <- numeric()
+    
+    
+    
     # go through all coordinates, transform them and calculate the various measures.
     for (n in 1:nrow(partial) ) {
         #sampleid[n] <- n    
@@ -173,6 +180,12 @@ transform <- function (partial) {
             partialinside[n]<-FALSE
         }
         
+        
+        #Distance to target
+        currentDistanceToTarget = dist( rbind(c(partial$MouseX[n], partial$MouseY[n]), c(partial$MouseX[nrow(partial)], partial$MouseY[nrow(partial)])) )[1] 
+        distanceToTarget[n] = currentDistanceToTarget/effectiveDistanceToTarget
+        
+       
        
     }
     
@@ -187,7 +200,10 @@ transform <- function (partial) {
     partial$displacement <- displacement
     partial$distance <- distance
     partial$insidecount <- insidecount
+    partial$distanceToTarget <- distanceToTarget
     #partial$sampleid <- sampleid    
+    
+
     return(partial)
 }
 
@@ -338,6 +354,7 @@ calculateMeasuresAlongPath <- function (partial) {
     tre <- list()
     tre$TRE <- vector()
     tre$entered <- FALSE
+    tre$firstenter <- TRUE
     
     # TAC
     tac <- list()
@@ -382,7 +399,12 @@ calculateMeasuresAlongPath <- function (partial) {
         if (dist(rbind(currentPoint, targetPoint)) < partial$TargetWidth[n]/2) {
             if ( !tre$entered ) {
                 tre$entered <- TRUE
-                tre$TRE <- append(tre$TRE, 1)
+                if ( tre$firstenter ) {
+                    tre$firstenter <- FALSE
+                    tre$TRE <- append(tre$TRE, 0)
+                } else {
+                    tre$TRE <- append(tre$TRE, 1)
+                }
             } else {
                 tre$TRE <- append(tre$TRE, 0)
             } 
