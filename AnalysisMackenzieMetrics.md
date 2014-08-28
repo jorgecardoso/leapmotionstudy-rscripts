@@ -1,10 +1,9 @@
 
 
-Analisys of the Leap Motion experiment at UCP
+Analisys of the Leap Motion experiment at FEUP
 ========================================================
 
-
-This document provides the analysis of the experiment conducted at UCP/CITAR comparing the movement of three devices - Mouse, Touchpad, and Leap Motion (via Touchless app) - for pointing tasks. 
+This document provides the analysis of the experiment conducted at UCP/CITAR comparing the movement of three devices - Mouse, LeapMotion (hand grab gesture), and Leap Motion (via Touchless app) - for pointing tasks. 
 
 We use Maczenzie's accuracy metrics to compare the devices.
 
@@ -12,7 +11,7 @@ We use Maczenzie's accuracy metrics to compare the devices.
 ```r
 PRODUCE_BULK_CHARTS = FALSE
 PRODUCE_BULK_HIST_CHARTS = TRUE
-PRODUCE_BULK_CHARTS_DEVICE_PLUS_USERID = FALSE
+PRODUCE_BULK_CHARTS_DEVICE_PLUS_USERID = TRUE
 
 #install.packages(c("ggplot2", "doBy", "psych", "car", "xtable"))
 require(ggplot2)
@@ -26,7 +25,7 @@ source("functions.R")
 data <- read.csv(file="data/measures-feup.txt", head=TRUE, sep="")
 
 # Users 0 and 5 did not complete the experiment
-#data <- data[ data$UserId != 5,]
+data <- data[ data$UserId != 5,]
 
 # Only blocks <= 7
 data <- data[ data$Block <= 7,]
@@ -37,7 +36,7 @@ data$Device <- as.factor(data$Device)
 # Set the levels 
 # LeapMotion=c(0),  Mouse=c(1), Touchpad=c(2), LeapMotionTouchless=c(4)
 # LeapMotion does not exist in the dataset from the UCP experiment
-levels(data$Device) <- list(Mouse=c(1), LeapMotion=c(0), LeapMotionTouchless=c(4))
+levels(data$Device) <- list(Mouse=c(1), LeapMotionHandGrab=c(0), LeapMotionScreenTap=c(4))
 
 # convert the block column to factor
 data$Block <- factor(data$Block)
@@ -54,6 +53,7 @@ DVars <- c("Throughput", "ErrorRate", "MovementTime", "TRE", "TAC", "ODC", "MDC"
 aggData <-aggregate(data[ ,DVars], data[ ,IVars], mean)
 aggData$Block <- factor(aggData$Block)
 ```
+
 
 Movement time as function of block
 -------------------------------------
@@ -101,9 +101,7 @@ ggsave(file = paste("charts/","all-movementtime-block-lineplot.pdf", sep=""),
                width=13/2.54, height=7/2.54, dpi=100)
 ```
 
-<!-- a comment here 
 
--->
 
 Throughput  as function of block
 -------------------------------------
@@ -181,18 +179,11 @@ To estimate the learning effect, we ran pairwise t-tests for average throughput 
 
 # pairwise t-tests to determine learning effect blocks
 p.t.test <- pairwise.t.test(aggData$Throughput, aggData$Block, paired=T, p.adjust.method="none")
-```
-
-```
-## Error: not all arguments have the same length
-```
-
-```r
 diag(p.t.test$p.value) 
 ```
 
 ```
-## Error: object 'p.t.test' not found
+## [1] 1.025e-04 9.962e-07 3.124e-04 6.753e-01 9.812e-01 4.457e-05
 ```
 
 ```r
@@ -200,7 +191,7 @@ diag(p.t.test$p.value) < 0.05
 ```
 
 ```
-## Error: object 'p.t.test' not found
+## [1]  TRUE  TRUE  TRUE FALSE FALSE  TRUE
 ```
 
 ```r
@@ -215,13 +206,6 @@ aggData.noLearn$Block <- factor(aggData.noLearn$Block)
 The results indicate a clear learning effect in blocks 1 to 3, but also indicate a significant different between blocks 6 and 7, suggesting that participants were still learning after block 6. However, in our following analysis we discard only blocks 1 to 3, since those represent the most significant learning effect.
 
 
-```
-## Error: not all arguments have the same length
-```
-
-```
-## Error: not all arguments have the same length
-```
 
 
 
@@ -240,39 +224,39 @@ print(xtable(s), type = "html")
 ```
 
 <!-- html table generated in R 3.0.2 by xtable 1.7-3 package -->
-<!-- Wed Aug 27 21:56:25 2014 -->
+<!-- Thu Aug 28 10:20:45 2014 -->
 <TABLE border=1>
 <TR> <TH>  </TH> <TH> vars </TH> <TH> n </TH> <TH> mean </TH> <TH> sd </TH> <TH> median </TH> <TH> trimmed </TH> <TH> mad </TH> <TH> min </TH> <TH> max </TH> <TH> range </TH> <TH> skew </TH> <TH> kurtosis </TH> <TH> se </TH>  </TR>
-  <TR> <TD align="right"> Mouse.Throughput </TD> <TD align="right">   1 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 4.98 </TD> <TD align="right"> 0.57 </TD> <TD align="right"> 4.91 </TD> <TD align="right"> 4.96 </TD> <TD align="right"> 0.57 </TD> <TD align="right"> 3.68 </TD> <TD align="right"> 6.49 </TD> <TD align="right"> 2.82 </TD> <TD align="right"> 0.23 </TD> <TD align="right"> -0.32 </TD> <TD align="right"> 0.04 </TD> </TR>
-  <TR> <TD align="right"> Mouse.ErrorRate </TD> <TD align="right">   2 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 0.04 </TD> <TD align="right"> 0.05 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.03 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.20 </TD> <TD align="right"> 0.20 </TD> <TD align="right"> 1.17 </TD> <TD align="right"> 1.20 </TD> <TD align="right"> 0.00 </TD> </TR>
-  <TR> <TD align="right"> Mouse.MovementTime </TD> <TD align="right">   3 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 0.82 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.81 </TD> <TD align="right"> 0.81 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.61 </TD> <TD align="right"> 1.10 </TD> <TD align="right"> 0.49 </TD> <TD align="right"> 0.53 </TD> <TD align="right"> 0.20 </TD> <TD align="right"> 0.01 </TD> </TR>
-  <TR> <TD align="right"> Mouse.TRE </TD> <TD align="right">   4 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.08 </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.33 </TD> <TD align="right"> 0.33 </TD> <TD align="right"> 0.49 </TD> <TD align="right"> -0.53 </TD> <TD align="right"> 0.01 </TD> </TR>
-  <TR> <TD align="right"> Mouse.TAC </TD> <TD align="right">   5 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 1.62 </TD> <TD align="right"> 0.33 </TD> <TD align="right"> 1.60 </TD> <TD align="right"> 1.61 </TD> <TD align="right"> 0.30 </TD> <TD align="right"> 0.80 </TD> <TD align="right"> 2.60 </TD> <TD align="right"> 1.80 </TD> <TD align="right"> 0.27 </TD> <TD align="right"> 0.04 </TD> <TD align="right"> 0.02 </TD> </TR>
-  <TR> <TD align="right"> Mouse.ODC </TD> <TD align="right">   6 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 1.12 </TD> <TD align="right"> 0.53 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 1.08 </TD> <TD align="right"> 0.49 </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 2.47 </TD> <TD align="right"> 2.40 </TD> <TD align="right"> 0.53 </TD> <TD align="right"> -0.60 </TD> <TD align="right"> 0.04 </TD> </TR>
-  <TR> <TD align="right"> Mouse.MDC </TD> <TD align="right">   7 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 4.32 </TD> <TD align="right"> 0.86 </TD> <TD align="right"> 4.20 </TD> <TD align="right"> 4.26 </TD> <TD align="right"> 0.89 </TD> <TD align="right"> 2.47 </TD> <TD align="right"> 6.87 </TD> <TD align="right"> 4.40 </TD> <TD align="right"> 0.53 </TD> <TD align="right"> -0.08 </TD> <TD align="right"> 0.06 </TD> </TR>
-  <TR> <TD align="right"> Mouse.MV </TD> <TD align="right">   8 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 21.79 </TD> <TD align="right"> 7.21 </TD> <TD align="right"> 20.64 </TD> <TD align="right"> 21.36 </TD> <TD align="right"> 8.04 </TD> <TD align="right"> 9.51 </TD> <TD align="right"> 48.22 </TD> <TD align="right"> 38.72 </TD> <TD align="right"> 0.61 </TD> <TD align="right"> 0.12 </TD> <TD align="right"> 0.51 </TD> </TR>
-  <TR> <TD align="right"> Mouse.ME </TD> <TD align="right">   9 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 19.40 </TD> <TD align="right"> 5.72 </TD> <TD align="right"> 18.89 </TD> <TD align="right"> 19.16 </TD> <TD align="right"> 6.32 </TD> <TD align="right"> 8.82 </TD> <TD align="right"> 41.02 </TD> <TD align="right"> 32.19 </TD> <TD align="right"> 0.46 </TD> <TD align="right"> 0.06 </TD> <TD align="right"> 0.40 </TD> </TR>
-  <TR> <TD align="right"> Mouse.MO </TD> <TD align="right">  10 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> -2.26 </TD> <TD align="right"> 6.37 </TD> <TD align="right"> -1.75 </TD> <TD align="right"> -2.22 </TD> <TD align="right"> 5.83 </TD> <TD align="right"> -18.62 </TD> <TD align="right"> 21.81 </TD> <TD align="right"> 40.43 </TD> <TD align="right"> 0.19 </TD> <TD align="right"> 0.91 </TD> <TD align="right"> 0.45 </TD> </TR>
-  <TR> <TD align="right"> LeapMotion.Throughput </TD> <TD align="right">   1 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 2.79 </TD> <TD align="right"> 0.55 </TD> <TD align="right"> 2.75 </TD> <TD align="right"> 2.77 </TD> <TD align="right"> 0.55 </TD> <TD align="right"> 1.59 </TD> <TD align="right"> 4.21 </TD> <TD align="right"> 2.61 </TD> <TD align="right"> 0.26 </TD> <TD align="right"> -0.46 </TD> <TD align="right"> 0.04 </TD> </TR>
-  <TR> <TD align="right"> LeapMotion.ErrorRate </TD> <TD align="right">   2 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 0.11 </TD> <TD align="right"> 0.12 </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 0.09 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.60 </TD> <TD align="right"> 0.60 </TD> <TD align="right"> 1.41 </TD> <TD align="right"> 2.16 </TD> <TD align="right"> 0.01 </TD> </TR>
-  <TR> <TD align="right"> LeapMotion.MovementTime </TD> <TD align="right">   3 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 1.68 </TD> <TD align="right"> 0.53 </TD> <TD align="right"> 1.53 </TD> <TD align="right"> 1.60 </TD> <TD align="right"> 0.34 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 4.12 </TD> <TD align="right"> 3.13 </TD> <TD align="right"> 1.79 </TD> <TD align="right"> 3.83 </TD> <TD align="right"> 0.04 </TD> </TR>
-  <TR> <TD align="right"> LeapMotion.TRE </TD> <TD align="right">   4 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 0.35 </TD> <TD align="right"> 0.25 </TD> <TD align="right"> 0.33 </TD> <TD align="right"> 0.32 </TD> <TD align="right"> 0.20 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 1.27 </TD> <TD align="right"> 1.27 </TD> <TD align="right"> 1.13 </TD> <TD align="right"> 1.04 </TD> <TD align="right"> 0.02 </TD> </TR>
-  <TR> <TD align="right"> LeapMotion.TAC </TD> <TD align="right">   5 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 1.90 </TD> <TD align="right"> 0.64 </TD> <TD align="right"> 1.80 </TD> <TD align="right"> 1.84 </TD> <TD align="right"> 0.49 </TD> <TD align="right"> 0.47 </TD> <TD align="right"> 4.33 </TD> <TD align="right"> 3.87 </TD> <TD align="right"> 0.98 </TD> <TD align="right"> 1.12 </TD> <TD align="right"> 0.05 </TD> </TR>
-  <TR> <TD align="right"> LeapMotion.ODC </TD> <TD align="right">   6 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 3.60 </TD> <TD align="right"> 1.72 </TD> <TD align="right"> 3.20 </TD> <TD align="right"> 3.36 </TD> <TD align="right"> 1.24 </TD> <TD align="right"> 0.80 </TD> <TD align="right"> 11.00 </TD> <TD align="right"> 10.20 </TD> <TD align="right"> 1.65 </TD> <TD align="right"> 3.59 </TD> <TD align="right"> 0.12 </TD> </TR>
-  <TR> <TD align="right"> LeapMotion.MDC </TD> <TD align="right">   7 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 7.42 </TD> <TD align="right"> 2.42 </TD> <TD align="right"> 6.87 </TD> <TD align="right"> 7.13 </TD> <TD align="right"> 1.98 </TD> <TD align="right"> 3.47 </TD> <TD align="right"> 17.07 </TD> <TD align="right"> 13.60 </TD> <TD align="right"> 1.17 </TD> <TD align="right"> 1.48 </TD> <TD align="right"> 0.17 </TD> </TR>
-  <TR> <TD align="right"> LeapMotion.MV </TD> <TD align="right">   8 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 25.89 </TD> <TD align="right"> 12.96 </TD> <TD align="right"> 21.92 </TD> <TD align="right"> 23.82 </TD> <TD align="right"> 7.86 </TD> <TD align="right"> 8.53 </TD> <TD align="right"> 88.30 </TD> <TD align="right"> 79.77 </TD> <TD align="right"> 1.78 </TD> <TD align="right"> 3.82 </TD> <TD align="right"> 0.92 </TD> </TR>
-  <TR> <TD align="right"> LeapMotion.ME </TD> <TD align="right">   9 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> 20.96 </TD> <TD align="right"> 10.44 </TD> <TD align="right"> 18.36 </TD> <TD align="right"> 19.26 </TD> <TD align="right"> 5.77 </TD> <TD align="right"> 7.14 </TD> <TD align="right"> 80.19 </TD> <TD align="right"> 73.05 </TD> <TD align="right"> 2.48 </TD> <TD align="right"> 8.50 </TD> <TD align="right"> 0.74 </TD> </TR>
-  <TR> <TD align="right"> LeapMotion.MO </TD> <TD align="right">  10 </TD> <TD align="right"> 200.00 </TD> <TD align="right"> -1.65 </TD> <TD align="right"> 7.78 </TD> <TD align="right"> -2.07 </TD> <TD align="right"> -2.11 </TD> <TD align="right"> 5.41 </TD> <TD align="right"> -25.27 </TD> <TD align="right"> 39.38 </TD> <TD align="right"> 64.65 </TD> <TD align="right"> 1.30 </TD> <TD align="right"> 5.80 </TD> <TD align="right"> 0.55 </TD> </TR>
-  <TR> <TD align="right"> LeapMotionTouchless.Throughput </TD> <TD align="right">   1 </TD> <TD align="right"> 189.00 </TD> <TD align="right"> 2.29 </TD> <TD align="right"> 0.52 </TD> <TD align="right"> 2.22 </TD> <TD align="right"> 2.26 </TD> <TD align="right"> 0.41 </TD> <TD align="right"> 1.19 </TD> <TD align="right"> 3.75 </TD> <TD align="right"> 2.56 </TD> <TD align="right"> 0.57 </TD> <TD align="right"> 0.03 </TD> <TD align="right"> 0.04 </TD> </TR>
-  <TR> <TD align="right"> LeapMotionTouchless.ErrorRate </TD> <TD align="right">   2 </TD> <TD align="right"> 189.00 </TD> <TD align="right"> 0.09 </TD> <TD align="right"> 0.09 </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.47 </TD> <TD align="right"> 0.47 </TD> <TD align="right"> 1.42 </TD> <TD align="right"> 2.24 </TD> <TD align="right"> 0.01 </TD> </TR>
-  <TR> <TD align="right"> LeapMotionTouchless.MovementTime </TD> <TD align="right">   3 </TD> <TD align="right"> 189.00 </TD> <TD align="right"> 1.95 </TD> <TD align="right"> 0.52 </TD> <TD align="right"> 1.88 </TD> <TD align="right"> 1.91 </TD> <TD align="right"> 0.40 </TD> <TD align="right"> 1.04 </TD> <TD align="right"> 4.10 </TD> <TD align="right"> 3.06 </TD> <TD align="right"> 0.96 </TD> <TD align="right"> 1.54 </TD> <TD align="right"> 0.04 </TD> </TR>
-  <TR> <TD align="right"> LeapMotionTouchless.TRE </TD> <TD align="right">   4 </TD> <TD align="right"> 189.00 </TD> <TD align="right"> 0.36 </TD> <TD align="right"> 0.30 </TD> <TD align="right"> 0.33 </TD> <TD align="right"> 0.33 </TD> <TD align="right"> 0.20 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 2.53 </TD> <TD align="right"> 2.53 </TD> <TD align="right"> 2.64 </TD> <TD align="right"> 14.25 </TD> <TD align="right"> 0.02 </TD> </TR>
-  <TR> <TD align="right"> LeapMotionTouchless.TAC </TD> <TD align="right">   5 </TD> <TD align="right"> 189.00 </TD> <TD align="right"> 2.24 </TD> <TD align="right"> 0.66 </TD> <TD align="right"> 2.13 </TD> <TD align="right"> 2.18 </TD> <TD align="right"> 0.59 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 5.33 </TD> <TD align="right"> 4.33 </TD> <TD align="right"> 1.20 </TD> <TD align="right"> 2.95 </TD> <TD align="right"> 0.05 </TD> </TR>
-  <TR> <TD align="right"> LeapMotionTouchless.ODC </TD> <TD align="right">   6 </TD> <TD align="right"> 189.00 </TD> <TD align="right"> 4.24 </TD> <TD align="right"> 2.30 </TD> <TD align="right"> 3.87 </TD> <TD align="right"> 4.02 </TD> <TD align="right"> 2.27 </TD> <TD align="right"> 1.07 </TD> <TD align="right"> 15.67 </TD> <TD align="right"> 14.60 </TD> <TD align="right"> 1.29 </TD> <TD align="right"> 3.15 </TD> <TD align="right"> 0.17 </TD> </TR>
-  <TR> <TD align="right"> LeapMotionTouchless.MDC </TD> <TD align="right">   7 </TD> <TD align="right"> 189.00 </TD> <TD align="right"> 8.41 </TD> <TD align="right"> 2.76 </TD> <TD align="right"> 8.20 </TD> <TD align="right"> 8.17 </TD> <TD align="right"> 2.67 </TD> <TD align="right"> 3.80 </TD> <TD align="right"> 22.40 </TD> <TD align="right"> 18.60 </TD> <TD align="right"> 1.15 </TD> <TD align="right"> 2.81 </TD> <TD align="right"> 0.20 </TD> </TR>
-  <TR> <TD align="right"> LeapMotionTouchless.MV </TD> <TD align="right">   8 </TD> <TD align="right"> 189.00 </TD> <TD align="right"> 22.09 </TD> <TD align="right"> 7.13 </TD> <TD align="right"> 20.25 </TD> <TD align="right"> 21.10 </TD> <TD align="right"> 4.96 </TD> <TD align="right"> 11.89 </TD> <TD align="right"> 51.25 </TD> <TD align="right"> 39.36 </TD> <TD align="right"> 1.66 </TD> <TD align="right"> 3.41 </TD> <TD align="right"> 0.52 </TD> </TR>
-  <TR> <TD align="right"> LeapMotionTouchless.ME </TD> <TD align="right">   9 </TD> <TD align="right"> 189.00 </TD> <TD align="right"> 17.91 </TD> <TD align="right"> 5.61 </TD> <TD align="right"> 16.76 </TD> <TD align="right"> 17.06 </TD> <TD align="right"> 3.95 </TD> <TD align="right"> 9.71 </TD> <TD align="right"> 43.75 </TD> <TD align="right"> 34.04 </TD> <TD align="right"> 2.00 </TD> <TD align="right"> 5.34 </TD> <TD align="right"> 0.41 </TD> </TR>
-  <TR> <TD align="right"> LeapMotionTouchless.MO </TD> <TD align="right">  10 </TD> <TD align="right"> 189.00 </TD> <TD align="right"> -2.02 </TD> <TD align="right"> 5.28 </TD> <TD align="right"> -2.06 </TD> <TD align="right"> -1.96 </TD> <TD align="right"> 4.47 </TD> <TD align="right"> -22.26 </TD> <TD align="right"> 14.59 </TD> <TD align="right"> 36.85 </TD> <TD align="right"> -0.31 </TD> <TD align="right"> 1.92 </TD> <TD align="right"> 0.38 </TD> </TR>
+  <TR> <TD align="right"> Mouse.Throughput </TD> <TD align="right">   1 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 5.00 </TD> <TD align="right"> 0.59 </TD> <TD align="right"> 4.98 </TD> <TD align="right"> 5.00 </TD> <TD align="right"> 0.63 </TD> <TD align="right"> 3.68 </TD> <TD align="right"> 6.49 </TD> <TD align="right"> 2.82 </TD> <TD align="right"> 0.13 </TD> <TD align="right"> -0.47 </TD> <TD align="right"> 0.04 </TD> </TR>
+  <TR> <TD align="right"> Mouse.ErrorRate </TD> <TD align="right">   2 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 0.04 </TD> <TD align="right"> 0.05 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.03 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.20 </TD> <TD align="right"> 0.20 </TD> <TD align="right"> 1.17 </TD> <TD align="right"> 1.22 </TD> <TD align="right"> 0.00 </TD> </TR>
+  <TR> <TD align="right"> Mouse.MovementTime </TD> <TD align="right">   3 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 0.81 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.80 </TD> <TD align="right"> 0.81 </TD> <TD align="right"> 0.11 </TD> <TD align="right"> 0.61 </TD> <TD align="right"> 1.10 </TD> <TD align="right"> 0.49 </TD> <TD align="right"> 0.58 </TD> <TD align="right"> 0.08 </TD> <TD align="right"> 0.01 </TD> </TR>
+  <TR> <TD align="right"> Mouse.TRE </TD> <TD align="right">   4 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.08 </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.33 </TD> <TD align="right"> 0.33 </TD> <TD align="right"> 0.47 </TD> <TD align="right"> -0.52 </TD> <TD align="right"> 0.01 </TD> </TR>
+  <TR> <TD align="right"> Mouse.TAC </TD> <TD align="right">   5 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 1.61 </TD> <TD align="right"> 0.34 </TD> <TD align="right"> 1.60 </TD> <TD align="right"> 1.60 </TD> <TD align="right"> 0.30 </TD> <TD align="right"> 0.80 </TD> <TD align="right"> 2.60 </TD> <TD align="right"> 1.80 </TD> <TD align="right"> 0.32 </TD> <TD align="right"> 0.05 </TD> <TD align="right"> 0.03 </TD> </TR>
+  <TR> <TD align="right"> Mouse.ODC </TD> <TD align="right">   6 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 1.17 </TD> <TD align="right"> 0.53 </TD> <TD align="right"> 1.07 </TD> <TD align="right"> 1.15 </TD> <TD align="right"> 0.59 </TD> <TD align="right"> 0.20 </TD> <TD align="right"> 2.47 </TD> <TD align="right"> 2.27 </TD> <TD align="right"> 0.45 </TD> <TD align="right"> -0.72 </TD> <TD align="right"> 0.04 </TD> </TR>
+  <TR> <TD align="right"> Mouse.MDC </TD> <TD align="right">   7 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 4.26 </TD> <TD align="right"> 0.85 </TD> <TD align="right"> 4.07 </TD> <TD align="right"> 4.20 </TD> <TD align="right"> 0.79 </TD> <TD align="right"> 2.47 </TD> <TD align="right"> 6.87 </TD> <TD align="right"> 4.40 </TD> <TD align="right"> 0.58 </TD> <TD align="right"> -0.02 </TD> <TD align="right"> 0.06 </TD> </TR>
+  <TR> <TD align="right"> Mouse.MV </TD> <TD align="right">   8 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 22.62 </TD> <TD align="right"> 7.08 </TD> <TD align="right"> 21.73 </TD> <TD align="right"> 22.27 </TD> <TD align="right"> 7.82 </TD> <TD align="right"> 9.51 </TD> <TD align="right"> 48.22 </TD> <TD align="right"> 38.72 </TD> <TD align="right"> 0.53 </TD> <TD align="right"> 0.16 </TD> <TD align="right"> 0.53 </TD> </TR>
+  <TR> <TD align="right"> Mouse.ME </TD> <TD align="right">   9 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 20.09 </TD> <TD align="right"> 5.56 </TD> <TD align="right"> 19.90 </TD> <TD align="right"> 19.91 </TD> <TD align="right"> 5.78 </TD> <TD align="right"> 8.99 </TD> <TD align="right"> 41.02 </TD> <TD align="right"> 32.03 </TD> <TD align="right"> 0.40 </TD> <TD align="right"> 0.19 </TD> <TD align="right"> 0.41 </TD> </TR>
+  <TR> <TD align="right"> Mouse.MO </TD> <TD align="right">  10 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> -2.46 </TD> <TD align="right"> 6.63 </TD> <TD align="right"> -2.29 </TD> <TD align="right"> -2.48 </TD> <TD align="right"> 6.29 </TD> <TD align="right"> -18.62 </TD> <TD align="right"> 21.81 </TD> <TD align="right"> 40.43 </TD> <TD align="right"> 0.26 </TD> <TD align="right"> 0.72 </TD> <TD align="right"> 0.49 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionHandGrab.Throughput </TD> <TD align="right">   1 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 2.80 </TD> <TD align="right"> 0.57 </TD> <TD align="right"> 2.77 </TD> <TD align="right"> 2.79 </TD> <TD align="right"> 0.60 </TD> <TD align="right"> 1.59 </TD> <TD align="right"> 4.21 </TD> <TD align="right"> 2.61 </TD> <TD align="right"> 0.21 </TD> <TD align="right"> -0.67 </TD> <TD align="right"> 0.04 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionHandGrab.ErrorRate </TD> <TD align="right">   2 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 0.11 </TD> <TD align="right"> 0.12 </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 0.09 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.60 </TD> <TD align="right"> 0.60 </TD> <TD align="right"> 1.33 </TD> <TD align="right"> 1.80 </TD> <TD align="right"> 0.01 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionHandGrab.MovementTime </TD> <TD align="right">   3 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 1.69 </TD> <TD align="right"> 0.55 </TD> <TD align="right"> 1.55 </TD> <TD align="right"> 1.61 </TD> <TD align="right"> 0.37 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 4.12 </TD> <TD align="right"> 3.13 </TD> <TD align="right"> 1.69 </TD> <TD align="right"> 3.23 </TD> <TD align="right"> 0.04 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionHandGrab.TRE </TD> <TD align="right">   4 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 0.37 </TD> <TD align="right"> 0.25 </TD> <TD align="right"> 0.33 </TD> <TD align="right"> 0.34 </TD> <TD align="right"> 0.20 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 1.27 </TD> <TD align="right"> 1.27 </TD> <TD align="right"> 1.06 </TD> <TD align="right"> 0.79 </TD> <TD align="right"> 0.02 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionHandGrab.TAC </TD> <TD align="right">   5 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 1.92 </TD> <TD align="right"> 0.67 </TD> <TD align="right"> 1.80 </TD> <TD align="right"> 1.86 </TD> <TD align="right"> 0.49 </TD> <TD align="right"> 0.47 </TD> <TD align="right"> 4.33 </TD> <TD align="right"> 3.87 </TD> <TD align="right"> 0.90 </TD> <TD align="right"> 0.79 </TD> <TD align="right"> 0.05 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionHandGrab.ODC </TD> <TD align="right">   6 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 3.61 </TD> <TD align="right"> 1.78 </TD> <TD align="right"> 3.13 </TD> <TD align="right"> 3.35 </TD> <TD align="right"> 1.28 </TD> <TD align="right"> 0.80 </TD> <TD align="right"> 11.00 </TD> <TD align="right"> 10.20 </TD> <TD align="right"> 1.62 </TD> <TD align="right"> 3.24 </TD> <TD align="right"> 0.13 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionHandGrab.MDC </TD> <TD align="right">   7 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 7.33 </TD> <TD align="right"> 2.48 </TD> <TD align="right"> 6.67 </TD> <TD align="right"> 7.01 </TD> <TD align="right"> 1.93 </TD> <TD align="right"> 3.47 </TD> <TD align="right"> 17.07 </TD> <TD align="right"> 13.60 </TD> <TD align="right"> 1.26 </TD> <TD align="right"> 1.57 </TD> <TD align="right"> 0.19 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionHandGrab.MV </TD> <TD align="right">   8 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 26.40 </TD> <TD align="right"> 13.37 </TD> <TD align="right"> 22.27 </TD> <TD align="right"> 24.32 </TD> <TD align="right"> 8.52 </TD> <TD align="right"> 8.53 </TD> <TD align="right"> 88.30 </TD> <TD align="right"> 79.77 </TD> <TD align="right"> 1.68 </TD> <TD align="right"> 3.37 </TD> <TD align="right"> 1.00 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionHandGrab.ME </TD> <TD align="right">   9 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 21.11 </TD> <TD align="right"> 10.79 </TD> <TD align="right"> 18.25 </TD> <TD align="right"> 19.36 </TD> <TD align="right"> 6.31 </TD> <TD align="right"> 7.14 </TD> <TD align="right"> 80.19 </TD> <TD align="right"> 73.05 </TD> <TD align="right"> 2.42 </TD> <TD align="right"> 7.96 </TD> <TD align="right"> 0.80 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionHandGrab.MO </TD> <TD align="right">  10 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> -1.57 </TD> <TD align="right"> 8.06 </TD> <TD align="right"> -1.97 </TD> <TD align="right"> -2.07 </TD> <TD align="right"> 5.38 </TD> <TD align="right"> -25.27 </TD> <TD align="right"> 39.38 </TD> <TD align="right"> 64.65 </TD> <TD align="right"> 1.29 </TD> <TD align="right"> 5.43 </TD> <TD align="right"> 0.60 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionScreenTap.Throughput </TD> <TD align="right">   1 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 2.31 </TD> <TD align="right"> 0.53 </TD> <TD align="right"> 2.23 </TD> <TD align="right"> 2.28 </TD> <TD align="right"> 0.42 </TD> <TD align="right"> 1.27 </TD> <TD align="right"> 3.75 </TD> <TD align="right"> 2.48 </TD> <TD align="right"> 0.56 </TD> <TD align="right"> -0.08 </TD> <TD align="right"> 0.04 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionScreenTap.ErrorRate </TD> <TD align="right">   2 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 0.09 </TD> <TD align="right"> 0.09 </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.47 </TD> <TD align="right"> 0.47 </TD> <TD align="right"> 1.40 </TD> <TD align="right"> 2.08 </TD> <TD align="right"> 0.01 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionScreenTap.MovementTime </TD> <TD align="right">   3 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 1.94 </TD> <TD align="right"> 0.51 </TD> <TD align="right"> 1.85 </TD> <TD align="right"> 1.90 </TD> <TD align="right"> 0.44 </TD> <TD align="right"> 1.04 </TD> <TD align="right"> 4.10 </TD> <TD align="right"> 3.06 </TD> <TD align="right"> 0.93 </TD> <TD align="right"> 1.49 </TD> <TD align="right"> 0.04 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionScreenTap.TRE </TD> <TD align="right">   4 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 0.37 </TD> <TD align="right"> 0.30 </TD> <TD align="right"> 0.33 </TD> <TD align="right"> 0.33 </TD> <TD align="right"> 0.20 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 2.53 </TD> <TD align="right"> 2.53 </TD> <TD align="right"> 2.64 </TD> <TD align="right"> 13.98 </TD> <TD align="right"> 0.02 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionScreenTap.TAC </TD> <TD align="right">   5 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 2.24 </TD> <TD align="right"> 0.67 </TD> <TD align="right"> 2.13 </TD> <TD align="right"> 2.18 </TD> <TD align="right"> 0.59 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 5.33 </TD> <TD align="right"> 4.33 </TD> <TD align="right"> 1.19 </TD> <TD align="right"> 2.76 </TD> <TD align="right"> 0.05 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionScreenTap.ODC </TD> <TD align="right">   6 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 4.20 </TD> <TD align="right"> 2.27 </TD> <TD align="right"> 3.87 </TD> <TD align="right"> 3.98 </TD> <TD align="right"> 2.37 </TD> <TD align="right"> 1.07 </TD> <TD align="right"> 15.67 </TD> <TD align="right"> 14.60 </TD> <TD align="right"> 1.26 </TD> <TD align="right"> 3.20 </TD> <TD align="right"> 0.17 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionScreenTap.MDC </TD> <TD align="right">   7 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 8.37 </TD> <TD align="right"> 2.76 </TD> <TD align="right"> 8.13 </TD> <TD align="right"> 8.13 </TD> <TD align="right"> 2.72 </TD> <TD align="right"> 3.80 </TD> <TD align="right"> 22.40 </TD> <TD align="right"> 18.60 </TD> <TD align="right"> 1.19 </TD> <TD align="right"> 3.02 </TD> <TD align="right"> 0.21 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionScreenTap.MV </TD> <TD align="right">   8 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 21.87 </TD> <TD align="right"> 7.01 </TD> <TD align="right"> 20.08 </TD> <TD align="right"> 20.89 </TD> <TD align="right"> 4.93 </TD> <TD align="right"> 11.89 </TD> <TD align="right"> 51.25 </TD> <TD align="right"> 39.36 </TD> <TD align="right"> 1.71 </TD> <TD align="right"> 3.76 </TD> <TD align="right"> 0.52 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionScreenTap.ME </TD> <TD align="right">   9 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> 17.73 </TD> <TD align="right"> 5.48 </TD> <TD align="right"> 16.53 </TD> <TD align="right"> 16.89 </TD> <TD align="right"> 4.00 </TD> <TD align="right"> 9.71 </TD> <TD align="right"> 43.75 </TD> <TD align="right"> 34.04 </TD> <TD align="right"> 2.00 </TD> <TD align="right"> 5.55 </TD> <TD align="right"> 0.41 </TD> </TR>
+  <TR> <TD align="right"> LeapMotionScreenTap.MO </TD> <TD align="right">  10 </TD> <TD align="right"> 180.00 </TD> <TD align="right"> -1.81 </TD> <TD align="right"> 5.18 </TD> <TD align="right"> -1.99 </TD> <TD align="right"> -1.78 </TD> <TD align="right"> 4.53 </TD> <TD align="right"> -22.26 </TD> <TD align="right"> 14.59 </TD> <TD align="right"> 36.85 </TD> <TD align="right"> -0.18 </TD> <TD align="right"> 1.61 </TD> <TD align="right"> 0.39 </TD> </TR>
    </TABLE>
 
 ```r
@@ -297,7 +281,7 @@ remove(s1)
 
 Histograms
 -----------------
-![plot of chunk charts-bulk-hist](figure/charts-bulk-hist1.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist2.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist3.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist4.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist5.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist6.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist7.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist8.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist9.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist10.png) 
+![plot of chunk charts-bulk-hist](figure/charts-bulk-hist1.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist2.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist3.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist4.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist5.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist6.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist7.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist8.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist9.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist10.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist11.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist12.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist13.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist14.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist15.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist16.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist17.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist18.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist19.png) ![plot of chunk charts-bulk-hist](figure/charts-bulk-hist20.png) 
 
 Boxplots
 ----------------
@@ -341,7 +325,7 @@ Throughput and Error rate
 describe <- describeBy(aggData.noLearn$Throughput, list(aggData.noLearn$Device))
 describe<-do.call("rbind",describe)
 describe <- cbind(Device=rownames(describe), describe)
-levels(describe$Device) <- list( Mouse=c("Mouse"), LeapMotion=c("LeapMotion"), LeapMotionTouchless=c("LeapMotionTouchless"))
+levels(describe$Device) <- list( Mouse=c("Mouse"), LeapMotionHandGrab=c("LeapMotionHandGrab"), LeapMotionScreenTap=c("LeapMotionScreenTap"))
 p1 <- ggplot(describe, aes(x=Device, y=mean, colour=Device, fill=Device )) + 
     geom_bar(stat="identity") +
     ylab("BPS") +
@@ -362,7 +346,7 @@ p1 <- ggplot(describe, aes(x=Device, y=mean, colour=Device, fill=Device )) +
 describe <- describeBy(aggData.noLearn$ErrorRate, list(aggData.noLearn$Device))
 describe<-do.call("rbind",describe)
 describe <- cbind(Device=rownames(describe), describe)
-levels(describe$Device) <- list( Mouse=c("Mouse"), LeapMotion=c("LeapMotion"), LeapMotionTouchless=c("LeapMotionTouchless"))
+levels(describe$Device) <- list( Mouse=c("Mouse"), LeapMotionHandGrab=c("LeapMotionHandGrab"), LeapMotionScreenTap=c("LeapMotionScreenTap"))
 
 p2 <- ggplot(describe, aes(x=Device, y=mean*100, colour=Device, fill=Device )) + 
     geom_bar(stat="identity") +
@@ -404,30 +388,17 @@ Barplots for metrics
 
 ```r
 describeMetrics <- describeBy(aggData.noLearn[, c("TRE","TAC","MDC","ODC","MV","ME","MO")], list(aggData.noLearn$Device))
-a=cbind(describeMetrics$LeapMotionTouchless, metric=rownames(describeMetrics$LeapMotionTouchless))
-a=cbind(a, Device="LeapMotionTouchless")
+a=cbind(describeMetrics$LeapMotionScreenTap, metric=rownames(describeMetrics$LeapMotionScreenTap))
+a=cbind(a, Device="LeapMotionScreenTap")
 b=cbind(describeMetrics$Mouse, metric=rownames(describeMetrics$Mouse))
 b=cbind(b, Device="Mouse")
-c=cbind(describeMetrics$Touchpad, metric=rownames(describeMetrics$Touchpad))
-c=cbind(c, Device="Touchpad")
+c=cbind(describeMetrics$LeapMotionHandGrab, metric=rownames(describeMetrics$LeapMotionHandGrab))
+c=cbind(c, Device="LeapMotionHandGrab")
 describeMetrics = rbind(a, b, c)
-```
-
-```
-## Error: numbers of columns of arguments do not match
-```
-
-```r
 describeMetrics$metric <- factor(describeMetrics$metric, levels=c("TRE", "TAC", "MDC", "ODC", "MV", "ME", "MO"))
 
-levels(describeMetrics$Device) <- list( Mouse=c("Mouse"), Touchpad=c("Touchpad"), LeapMotionTouchless=c("LeapMotionTouchless"))
-```
+levels(describeMetrics$Device) <- list( Mouse=c("Mouse"), LeapMotionHandGrab=c("LeapMotionHandGrab"), LeapMotionScreenTap=c("LeapMotionScreenTap"))
 
-```
-## Error: attempt to set an attribute on NULL
-```
-
-```r
 ggplot(describeMetrics, aes(x=Device, y=abs(mean), group=Device, colour=Device, fill=Device)) + 
     #stat_summary(fun.y="mean", geom="bar") + 
     geom_bar(stat="identity", width=.5, position = position_dodge(width=0.5)) +
@@ -440,19 +411,14 @@ ggplot(describeMetrics, aes(x=Device, y=abs(mean), group=Device, colour=Device, 
                   size = .1,
                   position=position_dodge(.5)) +
     facet_wrap(  ~ metric,nrow=1, scales="free") +
-    theme(legend.position=c(.5,-0.1), legend.direction="horizontal", 
+    theme(legend.position=c(.5, .1), legend.direction="horizontal", 
           axis.text.x = element_blank()) + 
     scale_fill_brewer(palette="Set1") + 
     scale_colour_brewer(palette="Set1") 
+ggsave(file = paste("charts/",filenameprefix,"-metrics.pdf", sep=""), width=60/2.54, height=6/2.54, dpi=100)
 ```
 
-```
-## Error: ggplot2 doesn't know how to deal with data of class by
-```
-
-```r
-ggsave(file = paste("charts/",filenameprefix,"-metrics.pdf", sep=""), width=30/2.54, height=6/2.54, dpi=100)
-```
+![plot of chunk chart-barplots](figure/chart-barplots.png) 
 
 Correlations
 ---------------
@@ -465,17 +431,17 @@ print(xtable(round(cor(aggData.noLearn[, vars]), 2)), type = "html")
 ```
 
 <!-- html table generated in R 3.0.2 by xtable 1.7-3 package -->
-<!-- Wed Aug 27 21:56:35 2014 -->
+<!-- Thu Aug 28 10:20:50 2014 -->
 <TABLE border=1>
 <TR> <TH>  </TH> <TH> Throughput </TH> <TH> TRE </TH> <TH> TAC </TH> <TH> ODC </TH> <TH> MDC </TH> <TH> MV </TH> <TH> ME </TH> <TH> MO </TH>  </TR>
-  <TR> <TD align="right"> Throughput </TD> <TD align="right"> 1.00 </TD> <TD align="right"> -0.54 </TD> <TD align="right"> -0.47 </TD> <TD align="right"> -0.71 </TD> <TD align="right"> -0.75 </TD> <TD align="right"> -0.14 </TD> <TD align="right"> -0.03 </TD> <TD align="right"> -0.04 </TD> </TR>
-  <TR> <TD align="right"> TRE </TD> <TD align="right"> -0.54 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 0.71 </TD> <TD align="right"> 0.80 </TD> <TD align="right"> 0.73 </TD> <TD align="right"> 0.37 </TD> <TD align="right"> 0.25 </TD> <TD align="right"> 0.11 </TD> </TR>
-  <TR> <TD align="right"> TAC </TD> <TD align="right"> -0.47 </TD> <TD align="right"> 0.71 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 0.69 </TD> <TD align="right"> 0.71 </TD> <TD align="right"> 0.30 </TD> <TD align="right"> 0.17 </TD> <TD align="right"> 0.12 </TD> </TR>
-  <TR> <TD align="right"> ODC </TD> <TD align="right"> -0.71 </TD> <TD align="right"> 0.80 </TD> <TD align="right"> 0.69 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 0.79 </TD> <TD align="right"> 0.42 </TD> <TD align="right"> 0.32 </TD> <TD align="right"> 0.02 </TD> </TR>
-  <TR> <TD align="right"> MDC </TD> <TD align="right"> -0.75 </TD> <TD align="right"> 0.73 </TD> <TD align="right"> 0.71 </TD> <TD align="right"> 0.79 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 0.20 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.05 </TD> </TR>
-  <TR> <TD align="right"> MV </TD> <TD align="right"> -0.14 </TD> <TD align="right"> 0.37 </TD> <TD align="right"> 0.30 </TD> <TD align="right"> 0.42 </TD> <TD align="right"> 0.20 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 0.94 </TD> <TD align="right"> 0.07 </TD> </TR>
-  <TR> <TD align="right"> ME </TD> <TD align="right"> -0.03 </TD> <TD align="right"> 0.25 </TD> <TD align="right"> 0.17 </TD> <TD align="right"> 0.32 </TD> <TD align="right"> 0.10 </TD> <TD align="right"> 0.94 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> -0.01 </TD> </TR>
-  <TR> <TD align="right"> MO </TD> <TD align="right"> -0.04 </TD> <TD align="right"> 0.11 </TD> <TD align="right"> 0.12 </TD> <TD align="right"> 0.02 </TD> <TD align="right"> 0.05 </TD> <TD align="right"> 0.07 </TD> <TD align="right"> -0.01 </TD> <TD align="right"> 1.00 </TD> </TR>
+  <TR> <TD align="right"> Throughput </TD> <TD align="right"> 1.00 </TD> <TD align="right"> -0.54 </TD> <TD align="right"> -0.48 </TD> <TD align="right"> -0.70 </TD> <TD align="right"> -0.75 </TD> <TD align="right"> -0.11 </TD> <TD align="right"> 0.01 </TD> <TD align="right"> -0.07 </TD> </TR>
+  <TR> <TD align="right"> TRE </TD> <TD align="right"> -0.54 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 0.72 </TD> <TD align="right"> 0.81 </TD> <TD align="right"> 0.74 </TD> <TD align="right"> 0.36 </TD> <TD align="right"> 0.24 </TD> <TD align="right"> 0.13 </TD> </TR>
+  <TR> <TD align="right"> TAC </TD> <TD align="right"> -0.48 </TD> <TD align="right"> 0.72 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 0.70 </TD> <TD align="right"> 0.72 </TD> <TD align="right"> 0.30 </TD> <TD align="right"> 0.17 </TD> <TD align="right"> 0.14 </TD> </TR>
+  <TR> <TD align="right"> ODC </TD> <TD align="right"> -0.70 </TD> <TD align="right"> 0.81 </TD> <TD align="right"> 0.70 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 0.79 </TD> <TD align="right"> 0.39 </TD> <TD align="right"> 0.28 </TD> <TD align="right"> 0.05 </TD> </TR>
+  <TR> <TD align="right"> MDC </TD> <TD align="right"> -0.75 </TD> <TD align="right"> 0.74 </TD> <TD align="right"> 0.72 </TD> <TD align="right"> 0.79 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 0.18 </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 0.07 </TD> </TR>
+  <TR> <TD align="right"> MV </TD> <TD align="right"> -0.11 </TD> <TD align="right"> 0.36 </TD> <TD align="right"> 0.30 </TD> <TD align="right"> 0.39 </TD> <TD align="right"> 0.18 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 0.94 </TD> <TD align="right"> 0.08 </TD> </TR>
+  <TR> <TD align="right"> ME </TD> <TD align="right"> 0.01 </TD> <TD align="right"> 0.24 </TD> <TD align="right"> 0.17 </TD> <TD align="right"> 0.28 </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 0.94 </TD> <TD align="right"> 1.00 </TD> <TD align="right"> 0.00 </TD> </TR>
+  <TR> <TD align="right"> MO </TD> <TD align="right"> -0.07 </TD> <TD align="right"> 0.13 </TD> <TD align="right"> 0.14 </TD> <TD align="right"> 0.05 </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 0.08 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 1.00 </TD> </TR>
    </TABLE>
 
 
@@ -495,9 +461,11 @@ leveneTest(Throughput ~ Device,data=aggData.noLearn, center="mean")
 
 ```
 ## Levene's Test for Homogeneity of Variance (center = "mean")
-##        Df F value Pr(>F)
-## group   2    1.73   0.18
-##       586
+##        Df F value Pr(>F)  
+## group   2    2.71  0.068 .
+##       537                 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
 
 ```r
@@ -507,8 +475,8 @@ leveneTest(ErrorRate ~ Device,data=aggData.noLearn, center="mean")
 ```
 ## Levene's Test for Homogeneity of Variance (center = "mean")
 ##        Df F value Pr(>F)    
-## group   2    43.5 <2e-16 ***
-##       586                   
+## group   2    42.3 <2e-16 ***
+##       537                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -520,8 +488,8 @@ leveneTest(TAC ~ Device,data=aggData.noLearn, center="mean")
 ```
 ## Levene's Test for Homogeneity of Variance (center = "mean")
 ##        Df F value  Pr(>F)    
-## group   2    22.7 3.1e-10 ***
-##       586                    
+## group   2    23.4 1.9e-10 ***
+##       537                    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -533,8 +501,8 @@ leveneTest(TRE ~ Device,data=aggData.noLearn, center="mean")
 ```
 ## Levene's Test for Homogeneity of Variance (center = "mean")
 ##        Df F value Pr(>F)    
-## group   2    47.9 <2e-16 ***
-##       586                   
+## group   2    45.3 <2e-16 ***
+##       537                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -546,8 +514,8 @@ leveneTest(MDC ~ Device,data=aggData.noLearn, center="mean")
 ```
 ## Levene's Test for Homogeneity of Variance (center = "mean")
 ##        Df F value Pr(>F)    
-## group   2    57.3 <2e-16 ***
-##       586                   
+## group   2      51 <2e-16 ***
+##       537                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -559,8 +527,8 @@ leveneTest(ODC ~ Device,data=aggData.noLearn, center="mean")
 ```
 ## Levene's Test for Homogeneity of Variance (center = "mean")
 ##        Df F value Pr(>F)    
-## group   2    78.3 <2e-16 ***
-##       586                   
+## group   2    74.6 <2e-16 ***
+##       537                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -572,8 +540,8 @@ leveneTest(ME ~ Device,data=aggData.noLearn, center="mean")
 ```
 ## Levene's Test for Homogeneity of Variance (center = "mean")
 ##        Df F value  Pr(>F)    
-## group   2    15.9 1.9e-07 ***
-##       586                    
+## group   2    19.3 7.7e-09 ***
+##       537                    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -585,8 +553,8 @@ leveneTest(MV ~ Device,data=aggData.noLearn, center="mean")
 ```
 ## Levene's Test for Homogeneity of Variance (center = "mean")
 ##        Df F value  Pr(>F)    
-## group   2    28.1 2.3e-12 ***
-##       586                    
+## group   2    33.1 2.7e-14 ***
+##       537                    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -597,9 +565,9 @@ leveneTest(MO ~ Device,data=aggData.noLearn, center="mean")
 
 ```
 ## Levene's Test for Homogeneity of Variance (center = "mean")
-##        Df F value Pr(>F)  
-## group   2    4.54  0.011 *
-##       586                 
+##        Df F value Pr(>F)   
+## group   2    5.63 0.0038 **
+##       537                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -608,34 +576,19 @@ leveneTest(MO ~ Device,data=aggData.noLearn, center="mean")
 for ( var in DVars ) {
     print(paste("Variances for ", var))
     varMouse = var(aggData.noLearn[aggData.noLearn$Device=="Mouse", var])
-    varTouch = var(aggData.noLearn[aggData.noLearn$Device=="Touchpad", var])
-    varLeap = var(aggData.noLearn[aggData.noLearn$Device=="LeapMotionTouchless", var])
+    varLeapHandGrab = var(aggData.noLearn[aggData.noLearn$Device=="LeapMotionHandGrab", var])
+    varLeapScreenTap = var(aggData.noLearn[aggData.noLearn$Device=="LeapMotionScreenTap", var])
     all = c(varMouse, varTouch, varLeap)
-    print (paste("Mouse: ", varMouse, " Touchpad: ", varTouch, " LeapMotionTouchless: ", varLeap, " Max/Min: ", max(all)/min(all)))
+    print (paste("Mouse: ", varMouse, " LeapMotionHandGrab: ", varLeapHandGrab, " LeapMotionScreenTap: ", varLeapScreenTap, " Max/Min: ", max(all)/min(all)))
 } 
 ```
 
 ```
 ## [1] "Variances for  Throughput"
-## [1] "Mouse:  0.328280523307287  Touchpad:  NA  LeapMotionTouchless:  0.272412023407061  Max/Min:  NA"
-## [1] "Variances for  ErrorRate"
-## [1] "Mouse:  0.00204924623115578  Touchpad:  NA  LeapMotionTouchless:  0.00865723541846473  Max/Min:  NA"
-## [1] "Variances for  MovementTime"
-## [1] "Mouse:  0.0097213829787828  Touchpad:  NA  LeapMotionTouchless:  0.267845210916232  Max/Min:  NA"
-## [1] "Variances for  TRE"
-## [1] "Mouse:  0.00629771077610274  Touchpad:  NA  LeapMotionTouchless:  0.0892929065505898  Max/Min:  NA"
-## [1] "Variances for  TAC"
-## [1] "Mouse:  0.111870351758794  Touchpad:  NA  LeapMotionTouchless:  0.42988504884486  Max/Min:  NA"
-## [1] "Variances for  ODC"
-## [1] "Mouse:  0.283066890005583  Touchpad:  NA  LeapMotionTouchless:  5.29992119779354  Max/Min:  NA"
-## [1] "Variances for  MDC"
-## [1] "Mouse:  0.737200558347292  Touchpad:  NA  LeapMotionTouchless:  7.63381840469311  Max/Min:  NA"
-## [1] "Variances for  MV"
-## [1] "Mouse:  51.9772119281089  Touchpad:  NA  LeapMotionTouchless:  50.8688729704054  Max/Min:  NA"
-## [1] "Variances for  ME"
-## [1] "Mouse:  32.7190723593315  Touchpad:  NA  LeapMotionTouchless:  31.5091018579891  Max/Min:  NA"
-## [1] "Variances for  MO"
-## [1] "Mouse:  40.6256630122052  Touchpad:  NA  LeapMotionTouchless:  27.8664566755512  Max/Min:  NA"
+```
+
+```
+## Error: object 'varTouch' not found
 ```
 
 ```r
@@ -650,19 +603,18 @@ summary(aov.Throughput)
 ## 
 ## Error: factor(UserId)
 ##           Df Sum Sq Mean Sq F value Pr(>F)
-## Device     1    0.1    0.05    0.01   0.94
 ## Residuals  8   74.3    9.28               
 ## 
 ## Error: factor(UserId):Device
-##           Df Sum Sq Mean Sq F value Pr(>F)    
-## Device     2    805     402     162  3e-12 ***
-## Residuals 18     45       2                   
+##           Df Sum Sq Mean Sq F value  Pr(>F)    
+## Device     2    742     371     134 9.9e-11 ***
+## Residuals 16     44       3                    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ## Error: Within
 ##            Df Sum Sq Mean Sq F value Pr(>F)
-## Residuals 559   55.7  0.0997
+## Residuals 513   52.9   0.103
 ```
 
 ```r
@@ -684,8 +636,8 @@ summary(aov.TAC)
 
 ```
 ##              Df Sum Sq Mean Sq F value Pr(>F)    
-## Device        2   37.6   18.82    59.4 <2e-16 ***
-## Residuals   586  185.6    0.32                   
+## Device        2   35.8   17.92    53.1 <2e-16 ***
+## Residuals   537  181.3    0.34                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -701,10 +653,10 @@ TukeyHSD(aov.TAC)
 ## Fit: aov(formula = TAC ~ Device, data = aggData.noLearn)
 ## 
 ## $Device
-##                                  diff    lwr    upr p adj
-## LeapMotion-Mouse               0.2860 0.1538 0.4182     0
-## LeapMotionTouchless-Mouse      0.6221 0.4880 0.7562     0
-## LeapMotionTouchless-LeapMotion 0.3361 0.2020 0.4702     0
+##                                          diff    lwr    upr p adj
+## LeapMotionHandGrab-Mouse               0.3122 0.1683 0.4562     0
+## LeapMotionScreenTap-Mouse              0.6311 0.4871 0.7751     0
+## LeapMotionScreenTap-LeapMotionHandGrab 0.3189 0.1749 0.4629     0
 ```
 
 ```r
@@ -716,8 +668,8 @@ summary(aov.TRE)
 
 ```
 ##              Df Sum Sq Mean Sq F value Pr(>F)    
-## Device        2    8.8    4.40    85.5 <2e-16 ***
-## Residuals   586   30.1    0.05                   
+## Device        2   8.46    4.23    78.4 <2e-16 ***
+## Residuals   537  28.99    0.05                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -733,10 +685,10 @@ TukeyHSD(aov.TRE)
 ## Fit: aov(formula = TRE ~ Device, data = aggData.noLearn)
 ## 
 ## $Device
-##                                   diff     lwr     upr  p adj
-## LeapMotion-Mouse               0.25200  0.1987 0.30529 0.0000
-## LeapMotionTouchless-Mouse      0.26406  0.2100 0.31812 0.0000
-## LeapMotionTouchless-LeapMotion 0.01206 -0.0420 0.06612 0.8595
+##                                             diff      lwr    upr  p adj
+## LeapMotionHandGrab-Mouse               0.2651852  0.20762 0.3227 0.0000
+## LeapMotionScreenTap-Mouse              0.2659259  0.20836 0.3235 0.0000
+## LeapMotionScreenTap-LeapMotionHandGrab 0.0007407 -0.05682 0.0583 0.9995
 ```
 
 ```r
@@ -748,8 +700,8 @@ summary(aov.MDC)
 
 ```
 ##              Df Sum Sq Mean Sq F value Pr(>F)    
-## Device        2   1790     895     191 <2e-16 ***
-## Residuals   586   2751       5                   
+## Device        2   1647     824     170 <2e-16 ***
+## Residuals   537   2600       5                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -765,10 +717,10 @@ TukeyHSD(aov.MDC)
 ## Fit: aov(formula = MDC ~ Device, data = aggData.noLearn)
 ## 
 ## $Device
-##                                  diff    lwr   upr p adj
-## LeapMotion-Mouse               3.0987 2.5896 3.608     0
-## LeapMotionTouchless-Mouse      4.0913 3.5749 4.608     0
-## LeapMotionTouchless-LeapMotion 0.9927 0.4762 1.509     0
+##                                         diff    lwr   upr p adj
+## LeapMotionHandGrab-Mouse               3.073 2.5282 3.618     0
+## LeapMotionScreenTap-Mouse              4.114 3.5690 4.659     0
+## LeapMotionScreenTap-LeapMotionHandGrab 1.041 0.4956 1.586     0
 ```
 
 ```r
@@ -780,8 +732,8 @@ summary(aov.ODC)
 
 ```
 ##              Df Sum Sq Mean Sq F value Pr(>F)    
-## Device        2   1069     535     191 <2e-16 ***
-## Residuals   586   1639       3                   
+## Device        2    926     463     161 <2e-16 ***
+## Residuals   537   1543       3                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -797,10 +749,10 @@ TukeyHSD(aov.ODC)
 ## Fit: aov(formula = ODC ~ Device, data = aggData.noLearn)
 ## 
 ## $Device
-##                                 diff    lwr   upr p adj
-## LeapMotion-Mouse               2.484 2.0914 2.877 0e+00
-## LeapMotionTouchless-Mouse      3.118 2.7197 3.517 0e+00
-## LeapMotionTouchless-LeapMotion 0.634 0.2354 1.033 6e-04
+##                                          diff    lwr   upr p adj
+## LeapMotionHandGrab-Mouse               2.4367 2.0167 2.857 0.000
+## LeapMotionScreenTap-Mouse              3.0256 2.6056 3.446 0.000
+## LeapMotionScreenTap-LeapMotionHandGrab 0.5889 0.1689 1.009 0.003
 ```
 
 ```r
@@ -815,8 +767,8 @@ summary(aov.MV)
 
 ```
 ##              Df Sum Sq Mean Sq F value  Pr(>F)    
-## Device        2   2075    1038    11.4 1.4e-05 ***
-## Residuals   586  53355      91                    
+## Device        2   2121    1060    11.4 1.4e-05 ***
+## Residuals   537  49788      93                    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -832,10 +784,10 @@ TukeyHSD(aov.MV)
 ## Fit: aov(formula = MV ~ Device, data = aggData.noLearn)
 ## 
 ## $Device
-##                                  diff    lwr    upr  p adj
-## LeapMotion-Mouse                4.099  1.857  6.341 0.0001
-## LeapMotionTouchless-Mouse       0.295 -1.979  2.569 0.9501
-## LeapMotionTouchless-LeapMotion -3.804 -6.079 -1.530 0.0003
+##                                           diff    lwr    upr  p adj
+## LeapMotionHandGrab-Mouse                3.7806  1.395  6.166 0.0006
+## LeapMotionScreenTap-Mouse              -0.7462 -3.132  1.639 0.7427
+## LeapMotionScreenTap-LeapMotionHandGrab -4.5268 -6.912 -2.141 0.0000
 ```
 
 ```r
@@ -847,8 +799,8 @@ summary(aov.ME)
 
 ```
 ##              Df Sum Sq Mean Sq F value  Pr(>F)    
-## Device        2    907     454    7.79 0.00046 ***
-## Residuals   586  34119      58                    
+## Device        2   1083     541    9.16 0.00012 ***
+## Residuals   537  31735      59                    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -864,10 +816,10 @@ TukeyHSD(aov.ME)
 ## Fit: aov(formula = ME ~ Device, data = aggData.noLearn)
 ## 
 ## $Device
-##                                  diff     lwr     upr  p adj
-## LeapMotion-Mouse                1.561 -0.2315  3.3544 0.1022
-## LeapMotionTouchless-Mouse      -1.493 -3.3116  0.3261 0.1316
-## LeapMotionTouchless-LeapMotion -3.054 -4.8730 -1.2354 0.0003
+##                                          diff     lwr     upr  p adj
+## LeapMotionHandGrab-Mouse                1.011 -0.8935  2.9154 0.4257
+## LeapMotionScreenTap-Mouse              -2.368 -4.2721 -0.4631 0.0101
+## LeapMotionScreenTap-LeapMotionHandGrab -3.379 -5.2830 -1.4741 0.0001
 ```
 
 ```r
@@ -879,8 +831,8 @@ summary(aov.MO)
 
 ```
 ##              Df Sum Sq Mean Sq F value Pr(>F)
-## Device        2     38    18.8    0.43   0.65
-## Residuals   586  25376    43.3
+## Device        2     77    38.3    0.85   0.43
+## Residuals   537  24279    45.2
 ```
 
 ```r
@@ -894,10 +846,10 @@ TukeyHSD(aov.MO)
 ## Fit: aov(formula = MO ~ Device, data = aggData.noLearn)
 ## 
 ## $Device
-##                                   diff     lwr   upr  p adj
-## LeapMotion-Mouse                0.6090 -0.9372 2.155 0.6244
-## LeapMotionTouchless-Mouse       0.2432 -1.3254 1.812 0.9295
-## LeapMotionTouchless-LeapMotion -0.3658 -1.9344 1.203 0.8475
+##                                           diff     lwr   upr  p adj
+## LeapMotionHandGrab-Mouse                0.8913 -0.7744 2.557 0.4199
+## LeapMotionScreenTap-Mouse               0.6498 -1.0159 2.316 0.6299
+## LeapMotionScreenTap-LeapMotionHandGrab -0.2415 -1.9073 1.424 0.9380
 ```
 
 
@@ -913,18 +865,18 @@ summary(model.tre)
 ## 
 ## Residuals:
 ##    Min     1Q Median     3Q    Max 
-## -2.350 -0.804 -0.026  0.849  4.019 
+## -2.354 -0.803 -0.029  0.838  3.903 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)   4.1075     0.0651    63.1   <2e-16 ***
-## TRE          -2.7062     0.1742   -15.5   <2e-16 ***
+## (Intercept)   4.1097     0.0686    59.9   <2e-16 ***
+## TRE          -2.6611     0.1793   -14.8   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 1.09 on 587 degrees of freedom
-## Multiple R-squared:  0.291,	Adjusted R-squared:  0.29 
-## F-statistic:  241 on 1 and 587 DF,  p-value: <2e-16
+## Residual standard error: 1.1 on 538 degrees of freedom
+## Multiple R-squared:  0.29,	Adjusted R-squared:  0.289 
+## F-statistic:  220 on 1 and 538 DF,  p-value: <2e-16
 ```
 
 ```r
@@ -939,18 +891,18 @@ summary(model.odc)
 ## 
 ## Residuals:
 ##    Min     1Q Median     3Q    Max 
-## -2.263 -0.626 -0.008  0.565  3.346 
+## -2.273 -0.639 -0.018  0.615  3.317 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)   4.6452     0.0636    73.0   <2e-16 ***
-## ODC          -0.4290     0.0174   -24.7   <2e-16 ***
+## (Intercept)   4.6517     0.0686    67.8   <2e-16 ***
+## ODC          -0.4275     0.0186   -22.9   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.905 on 587 degrees of freedom
-## Multiple R-squared:  0.509,	Adjusted R-squared:  0.508 
-## F-statistic:  608 on 1 and 587 DF,  p-value: <2e-16
+## Residual standard error: 0.927 on 538 degrees of freedom
+## Multiple R-squared:  0.494,	Adjusted R-squared:  0.493 
+## F-statistic:  526 on 1 and 538 DF,  p-value: <2e-16
 ```
 
 ```r
@@ -965,18 +917,18 @@ summary(model.mdc)
 ## 
 ## Residuals:
 ##    Min     1Q Median     3Q    Max 
-## -2.139 -0.622 -0.099  0.594  3.365 
+## -2.122 -0.617 -0.105  0.600  3.350 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)   5.7006     0.0919    62.0   <2e-16 ***
-## MDC          -0.3479     0.0127   -27.4   <2e-16 ***
+## (Intercept)   5.6750     0.0961    59.1   <2e-16 ***
+## MDC          -0.3462     0.0133   -26.0   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.855 on 587 degrees of freedom
-## Multiple R-squared:  0.561,	Adjusted R-squared:  0.561 
-## F-statistic:  751 on 1 and 587 DF,  p-value: <2e-16
+## Residual standard error: 0.867 on 538 degrees of freedom
+## Multiple R-squared:  0.557,	Adjusted R-squared:  0.556 
+## F-statistic:  677 on 1 and 538 DF,  p-value: <2e-16
 ```
 
 ```r
@@ -991,19 +943,19 @@ summary(model.odcmdc)
 ## 
 ## Residuals:
 ##    Min     1Q Median     3Q    Max 
-## -1.983 -0.578 -0.063  0.547  3.960 
+## -1.987 -0.585 -0.063  0.556  3.921 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)   5.4821     0.0926   59.22  < 2e-16 ***
-## ODC          -0.1932     0.0258   -7.49  2.5e-13 ***
-## MDC          -0.2297     0.0199  -11.53  < 2e-16 ***
+## (Intercept)   5.4875     0.0968   56.70  < 2e-16 ***
+## ODC          -0.1816     0.0276   -6.58  1.1e-10 ***
+## MDC          -0.2362     0.0211  -11.22  < 2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.818 on 586 degrees of freedom
-## Multiple R-squared:   0.6,	Adjusted R-squared:  0.598 
-## F-statistic:  439 on 2 and 586 DF,  p-value: <2e-16
+## Residual standard error: 0.835 on 537 degrees of freedom
+## Multiple R-squared:  0.59,	Adjusted R-squared:  0.589 
+## F-statistic:  387 on 2 and 537 DF,  p-value: <2e-16
 ```
 
 ```r
@@ -1018,20 +970,20 @@ summary(model.treodcmdc)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -0.7947 -0.1725 -0.0206  0.1257  1.1935 
+## -0.8588 -0.1781 -0.0146  0.1269  1.1660 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  0.23095    0.02977    7.76  3.9e-14 ***
-## TRE         -0.28351    0.07027   -4.03  6.2e-05 ***
-## ODC          0.15305    0.00949   16.12  < 2e-16 ***
-## MDC          0.12964    0.00645   20.11  < 2e-16 ***
+## (Intercept)  0.21146    0.03090    6.84  2.1e-11 ***
+## TRE         -0.35164    0.07454   -4.72  3.1e-06 ***
+## ODC          0.15261    0.01017   15.00  < 2e-16 ***
+## MDC          0.13694    0.00674   20.32  < 2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.256 on 585 degrees of freedom
-## Multiple R-squared:  0.845,	Adjusted R-squared:  0.844 
-## F-statistic: 1.06e+03 on 3 and 585 DF,  p-value: <2e-16
+## Residual standard error: 0.257 on 536 degrees of freedom
+## Multiple R-squared:  0.845,	Adjusted R-squared:  0.845 
+## F-statistic:  977 on 3 and 536 DF,  p-value: <2e-16
 ```
 
 ```r
@@ -1046,19 +998,19 @@ summary(model.tretac)
 ## 
 ## Residuals:
 ##    Min     1Q Median     3Q    Max 
-## -2.311 -0.808 -0.082  0.839  3.856 
+## -2.313 -0.790 -0.078  0.824  3.714 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)    4.642      0.162   28.58  < 2e-16 ***
-## TRE           -2.077      0.246   -8.44  2.5e-16 ***
-## TAC           -0.368      0.103   -3.58  0.00037 ***
+## (Intercept)    4.644      0.168   27.69  < 2e-16 ***
+## TRE           -2.016      0.256   -7.87    2e-14 ***
+## TAC           -0.371      0.106   -3.49  0.00053 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 1.08 on 586 degrees of freedom
+## Residual standard error: 1.09 on 537 degrees of freedom
 ## Multiple R-squared:  0.306,	Adjusted R-squared:  0.304 
-## F-statistic:  129 on 2 and 586 DF,  p-value: <2e-16
+## F-statistic:  118 on 2 and 537 DF,  p-value: <2e-16
 ```
 
 

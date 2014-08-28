@@ -8,11 +8,10 @@ options(rstudio.markdownToHTML =
 )
 ```
 
-Analisys of the Leap Motion experiment at UCP
+Analisys of the Leap Motion experiment at FEUP
 ========================================================
 
-
-This document provides the analysis of the experiment conducted at UCP/CITAR comparing the movement of three devices - Mouse, Touchpad, and Leap Motion (via Touchless app) - for pointing tasks. 
+This document provides the analysis of the experiment conducted at UCP/CITAR comparing the movement of three devices - Mouse, LeapMotion (hand grab gesture), and Leap Motion (via Touchless app) - for pointing tasks. 
 
 We use Maczenzie's accuracy metrics to compare the devices.
 
@@ -20,7 +19,7 @@ We use Maczenzie's accuracy metrics to compare the devices.
 
 PRODUCE_BULK_CHARTS = FALSE
 PRODUCE_BULK_HIST_CHARTS = TRUE
-PRODUCE_BULK_CHARTS_DEVICE_PLUS_USERID = FALSE
+PRODUCE_BULK_CHARTS_DEVICE_PLUS_USERID = TRUE
 
 #install.packages(c("ggplot2", "doBy", "psych", "car", "xtable"))
 require(ggplot2)
@@ -45,7 +44,7 @@ data$Device <- as.factor(data$Device)
 # Set the levels 
 # LeapMotion=c(0),  Mouse=c(1), Touchpad=c(2), LeapMotionTouchless=c(4)
 # LeapMotion does not exist in the dataset from the UCP experiment
-levels(data$Device) <- list(Mouse=c(1), LeapMotion=c(0), LeapMotionTouchless=c(4))
+levels(data$Device) <- list(Mouse=c(1), LeapMotionHandGrab=c(0), LeapMotionScreenTap=c(4))
 
 # convert the block column to factor
 data$Block <- factor(data$Block)
@@ -61,9 +60,8 @@ IVars <- c("Device", "Block", "Sequence", "UserId")
 DVars <- c("Throughput", "ErrorRate", "MovementTime", "TRE", "TAC", "ODC", "MDC", "MV", "ME", "MO")
 aggData <-aggregate(data[ ,DVars], data[ ,IVars], mean)
 aggData$Block <- factor(aggData$Block)
-
-
 ```
+
 
 Movement time as function of block
 -------------------------------------
@@ -102,20 +100,7 @@ ggsave(file = paste("charts/","all-movementtime-block-lineplot.pdf", sep=""),
                width=13/2.54, height=7/2.54, dpi=100)
 ```
 
-<!-- a comment here 
-```{r movement-time-block-peruser-leapmotiontouchless, fig.width=21/2.54, fig.height=40/2.54, results='hide', message=FALSE, echo=FALSE, fig.show='hide', cache=TRUE}
-p <- ggplot(aggData[aggData$Device=="LeapMotionTouchless",], aes_string(x="Block", y="MovementTime", group="UserId", colour="UserId" )) + 
-            stat_summary(fun.y="mean", geom="line") + 
-            stat_summary(fun.y="mean", geom="point", aes(shape=Device)) + 
-            theme(legend.direction = "horizontal", legend.position = "top") +
-            facet_wrap( ~ UserId, ncol=2) +
-            #ylab("Percentage (%)") +
-            #xlab("Sequence") +
-            #ggtitle(var) +
-            theme() #noop
-p
-```
--->
+
 
 Throughput  as function of block
 -------------------------------------
@@ -283,9 +268,10 @@ if (PRODUCE_BULK_HIST_CHARTS == TRUE) {
 
 ```
 
+
 Boxplots
 ----------------
-```{r charts-bulk-boxplot, echo=FALSE, message=FALSE}
+```{r charts-bulk-boxplot, echo=FALSE, message=FALSE, cache=TRUE}
 if (PRODUCE_BULK_CHARTS == TRUE) {
     for (var in DVars ) {
         # plot the boxplots of the movement time for each device
@@ -320,7 +306,7 @@ if (PRODUCE_BULK_CHARTS == TRUE) {
 
 Lineplots
 -------------
-```{r charts-bulk-lineplot, echo=FALSE, message=FALSE}
+```{r charts-bulk-lineplot, echo=FALSE, message=FALSE, cache=TRUE}
 if (PRODUCE_BULK_CHARTS == TRUE) {
     for (var in DVars ) {
         # line plot movement time over block for each device
@@ -355,6 +341,7 @@ if (PRODUCE_BULK_CHARTS == TRUE) {
 }
 ```
 
+
 MO Over TRE
 -----------------------
 ```{r chart-MO-over-TRE}
@@ -371,10 +358,8 @@ p <- ggplot(s, aes(x=TRE.mean, y=abs(MO.mean), group=Device, colour=Device )) +
     theme()
 p
 ggsave(file = paste("charts/",filenameprefix,"-MO-TRE.pdf", sep=""), width=14/2.54, height=7/2.54, dpi=100)
-
-
-
 ```
+
 
 Throughput and Error rate
 -----------------
@@ -384,7 +369,7 @@ Throughput and Error rate
 describe <- describeBy(aggData.noLearn$Throughput, list(aggData.noLearn$Device))
 describe<-do.call("rbind",describe)
 describe <- cbind(Device=rownames(describe), describe)
-levels(describe$Device) <- list( Mouse=c("Mouse"), LeapMotion=c("LeapMotion"), LeapMotionTouchless=c("LeapMotionTouchless"))
+levels(describe$Device) <- list( Mouse=c("Mouse"), LeapMotionHandGrab=c("LeapMotionHandGrab"), LeapMotionScreenTap=c("LeapMotionScreenTap"))
 p1 <- ggplot(describe, aes(x=Device, y=mean, colour=Device, fill=Device )) + 
     geom_bar(stat="identity") +
     ylab("BPS") +
@@ -393,9 +378,11 @@ p1 <- ggplot(describe, aes(x=Device, y=mean, colour=Device, fill=Device )) +
     geom_errorbar(aes(ymin=mean-1.96*se, ymax=mean+1.96*se), colour="Black",
                   width=.2,                    # Width of the error bars
                   position=position_dodge(.9)) +
-    theme(legend.position="none", 
-          #axis.text.x = element_text(angle = 20, hjust = 1),
-          axis.text.x=element_blank()) +
+    theme(
+        plot.margin=unit(c(10,1,1,1),"mm"),
+        legend.position="none", 
+        #axis.text.x = element_text(angle = 20, hjust = 1),
+        axis.text.x=element_blank()) +
     scale_fill_brewer(palette="Set1") + 
     scale_colour_brewer(palette="Set1") +
     theme() 
@@ -405,7 +392,7 @@ p1 <- ggplot(describe, aes(x=Device, y=mean, colour=Device, fill=Device )) +
 describe <- describeBy(aggData.noLearn$ErrorRate, list(aggData.noLearn$Device))
 describe<-do.call("rbind",describe)
 describe <- cbind(Device=rownames(describe), describe)
-levels(describe$Device) <- list( Mouse=c("Mouse"), LeapMotion=c("LeapMotion"), LeapMotionTouchless=c("LeapMotionTouchless"))
+levels(describe$Device) <- list( Mouse=c("Mouse"), LeapMotionHandGrab=c("LeapMotionHandGrab"), LeapMotionScreenTap=c("LeapMotionScreenTap"))
 
 p2 <- ggplot(describe, aes(x=Device, y=mean*100, colour=Device, fill=Device )) + 
     geom_bar(stat="identity") +
@@ -416,7 +403,10 @@ p2 <- ggplot(describe, aes(x=Device, y=mean*100, colour=Device, fill=Device )) +
                   width=.2,                    # Width of the error bars
                   position=position_dodge(.9)) +
     
-    theme(legend.position=c(0,0.9), legend.direction="horizontal", 
+    theme(
+         plot.margin=unit(c(10,1,1,1),"mm"),
+         legend.position=c(-0.1,1.07), 
+          legend.direction="horizontal", 
           #axis.text.x = element_text(angle = 20, hjust = 1),
           axis.text.x=element_blank()) +
     scale_fill_brewer(palette="Set1") + 
@@ -424,7 +414,7 @@ p2 <- ggplot(describe, aes(x=Device, y=mean*100, colour=Device, fill=Device )) +
     theme() 
 
 #pdf(file = paste("charts/",filenameprefix,"-Throughput+ErrorRate.pdf",sep=""), width=20/2.54, height=16/2.54)
-pdf(file = paste("charts/",filenameprefix,"-Throughput+ErrorRate-small.pdf",sep=""), width=16/2.54, height=7/2.54)
+pdf(file = paste("charts/",filenameprefix,"-Throughput+ErrorRate-small.pdf",sep=""), width=16/2.54, height=9/2.54)
 multiplot(p1, p2, cols=2)
 dev.off()
 
@@ -435,19 +425,19 @@ p2
 
 Barplots for metrics
 -----------------
-```{r chart-barplots, fig.show='hold', message=FALSE, warning=FALSE}
+```{r chart-barplots, fig.show='hold', fig.width=50/2.54, message=FALSE, warning=FALSE}
 
 describeMetrics <- describeBy(aggData.noLearn[, c("TRE","TAC","MDC","ODC","MV","ME","MO")], list(aggData.noLearn$Device))
-a=cbind(describeMetrics$LeapMotionTouchless, metric=rownames(describeMetrics$LeapMotionTouchless))
-a=cbind(a, Device="LeapMotionTouchless")
+a=cbind(describeMetrics$LeapMotionScreenTap, metric=rownames(describeMetrics$LeapMotionScreenTap))
+a=cbind(a, Device="LeapMotionScreenTap")
 b=cbind(describeMetrics$Mouse, metric=rownames(describeMetrics$Mouse))
 b=cbind(b, Device="Mouse")
-c=cbind(describeMetrics$Touchpad, metric=rownames(describeMetrics$Touchpad))
-c=cbind(c, Device="Touchpad")
+c=cbind(describeMetrics$LeapMotionHandGrab, metric=rownames(describeMetrics$LeapMotionHandGrab))
+c=cbind(c, Device="LeapMotionHandGrab")
 describeMetrics = rbind(a, b, c)
 describeMetrics$metric <- factor(describeMetrics$metric, levels=c("TRE", "TAC", "MDC", "ODC", "MV", "ME", "MO"))
 
-levels(describeMetrics$Device) <- list( Mouse=c("Mouse"), Touchpad=c("Touchpad"), LeapMotionTouchless=c("LeapMotionTouchless"))
+levels(describeMetrics$Device) <- list( Mouse=c("Mouse"), LeapMotionHandGrab=c("LeapMotionHandGrab"), LeapMotionScreenTap=c("LeapMotionScreenTap"))
 
 ggplot(describeMetrics, aes(x=Device, y=abs(mean), group=Device, colour=Device, fill=Device)) + 
     #stat_summary(fun.y="mean", geom="bar") + 
@@ -461,11 +451,11 @@ ggplot(describeMetrics, aes(x=Device, y=abs(mean), group=Device, colour=Device, 
                   size = .1,
                   position=position_dodge(.5)) +
     facet_wrap(  ~ metric,nrow=1, scales="free") +
-    theme(legend.position=c(.5,-0.1), legend.direction="horizontal", 
+    theme(legend.position=c(.5, .1), legend.direction="horizontal", 
           axis.text.x = element_blank()) + 
     scale_fill_brewer(palette="Set1") + 
     scale_colour_brewer(palette="Set1") 
-ggsave(file = paste("charts/",filenameprefix,"-metrics.pdf", sep=""), width=30/2.54, height=6/2.54, dpi=100)
+ggsave(file = paste("charts/",filenameprefix,"-metrics.pdf", sep=""), width=60/2.54, height=6/2.54, dpi=100)
 
 ```
 
@@ -505,10 +495,10 @@ leveneTest(MO ~ Device,data=aggData.noLearn, center="mean")
 for ( var in DVars ) {
     print(paste("Variances for ", var))
     varMouse = var(aggData.noLearn[aggData.noLearn$Device=="Mouse", var])
-    varTouch = var(aggData.noLearn[aggData.noLearn$Device=="Touchpad", var])
-    varLeap = var(aggData.noLearn[aggData.noLearn$Device=="LeapMotionTouchless", var])
+    varLeapHandGrab = var(aggData.noLearn[aggData.noLearn$Device=="LeapMotionHandGrab", var])
+    varLeapScreenTap = var(aggData.noLearn[aggData.noLearn$Device=="LeapMotionScreenTap", var])
     all = c(varMouse, varTouch, varLeap)
-    print (paste("Mouse: ", varMouse, " Touchpad: ", varTouch, " LeapMotionTouchless: ", varLeap, " Max/Min: ", max(all)/min(all)))
+    print (paste("Mouse: ", varMouse, " LeapMotionHandGrab: ", varLeapHandGrab, " LeapMotionScreenTap: ", varLeapScreenTap, " Max/Min: ", max(all)/min(all)))
 } 
 
 
